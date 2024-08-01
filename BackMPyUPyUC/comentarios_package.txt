@@ -1,0 +1,55 @@
+{
+    "name": "yappa", // Nombre del proyecto
+    "version": "1.0.0", // Versión del proyecto
+    "description": "", // Descripción del proyecto (opcional)
+    "main": "index.js", // Archivo principal del proyecto
+    "scripts": {
+        "start": "node .", // Script para iniciar la aplicación en producción
+        "dev": "nodemon src/index.ts", // Script para iniciar la aplicación en modo de desarrollo con nodemon
+        "dev:dist": "ts-node src/localDist.ts", // Script para iniciar la aplicación en modo de desarrollo con ts-node
+        "test": "echo \"Error: no test specified\" && exit 1" // Script para ejecutar pruebas (actualmente solo muestra un mensaje de error)
+    },
+    "keywords": [], // Palabras clave que describen el proyecto (opcional)
+    "author": "", // Autor del proyecto (opcional)
+    "license": "ISC", // Licencia del proyecto
+    "dependencies": {
+        "@types/jest": "29.2.6", // Dependencias del proyecto para pruebas unitarias
+        "@types/node": "18.11.18", // Tipos de TypeScript para Node.js
+        "cors": "^2.8.5", // Middleware para habilitar CORS en Express
+        "dotenv": "^16.4.5", // Cargar variables de entorno desde un archivo .env
+        "express": "^4.19.2", // Framework web para Node.js
+        "express-validator": "^7.0.1", // Middleware para validar datos de solicitud en Express
+        "joi": "^17.12.3", // Biblioteca de validación de datos
+        "joi-objectid": "^4.0.2", // Extensión Joi para validar IDs de MongoDB
+        "mysql-await": "^2.2.3", // Conexión MySQL asincrónica
+        "reflect-metadata": "^0.2.2", // Decoradores de metadatos para TypeScript
+        "rimraf": "4.1.2", // Herramienta para eliminar directorios de forma recursiva
+        "run-script-os": "1.1.6", // Ejecutar scripts específicos del sistema operativo
+        "swagger-ui-express": "4.6.0", // Middleware para generar una interfaz de usuario Swagger en Express
+        "typeorm": "^0.3.17", // ORM TypeScript para Node.js
+        "typeorm-transactional": "^0.4.1", // Extensión para transacciones de TypeORM
+        "typeorm-transactional-cls-hooked": "^0.1.21", // Manejo de transacciones de TypeORM con cls-hooked
+        "typescript": "4.9.4", // Lenguaje de programación TypeScript
+        "uuid": "^9.0.0" // Generador de identificadores únicos
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^19.2.1", // Herramienta para verificar mensajes de confirmación según convenciones
+        "@commitlint/config-conventional": "^19.1.0", // Configuración convencional para commitlint
+        "@stryker-mutator/core": "^8.2.6", // Herramienta para realizar pruebas de mutación
+        "@stryker-mutator/jest-runner": "^8.2.6", // Adaptador de Jest para Stryker
+        "@types/cors": "^2.8.17", // Tipos de TypeScript para el middleware cors
+        "@types/express": "^4.17.21", // Tipos de TypeScript para Express
+        "@types/helmet": "^4.0.0", // Tipos de TypeScript para el middleware helmet
+        "@types/node": "^20.12.7", // Tipos de TypeScript para Node.js
+        "@types/validator": "^13.11.9", // Tipos de TypeScript para el módulo validator
+        "conventional-changelog-cli": "^4.1.0", // Herramienta para generar registros de cambios convencionales
+        "husky": "^9.0.11", // Utilidad para configurar ganchos de Git
+        "jest": "^29.7.0", // Framework de pruebas unitarias para JavaScript
+        "jest-html-reporter": "^3.10.2", // Generador de informes HTML para Jest
+        "lint-staged": "^15.2.2", // Ejecutar scripts en archivos modificados antes de confirmarlos
+        "nodemon": "^3.1.0", // Herramienta que reinicia automáticamente la aplicación cuando se detectan cambios
+        "prettier": "^3.2.5", // Herramienta para formatear código automáticamente
+        "ts-jest": "^29.1.2", // Adaptador de Jest para TypeScript
+        "ts-node": "^10.9.2" // Ejecutar archivos TypeScript directamente sin necesidad de compilarlos
+    }
+}

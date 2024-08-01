@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true, // Habilita la interoperabilidad de módulos entre CommonJS y ES6
+        "experimentalDecorators": true, // Permite el uso de decoradores experimentales
+        "emitDecoratorMetadata": true, // Habilita la emisión de metadatos para los decoradores
+        "module": "NodeNext", // Define el formato de módulo para Node.js (podría ser "CommonJS" o "ESNext" según tu entorno)
+        "moduleResolution": "NodeNext", // Resolución de módulos para Node.js (podría ser "Classic" o "Node" según tu entorno)
+        "target": "ES2020", // Versión de JavaScript a la que se compilará el código
+        "sourceMap": true, // Genera archivos de mapa de origen (.map) para facilitar la depuración
+        "rootDir": "src", // Directorio raíz de los archivos fuente TypeScript
+        "outDir": "dist", // Directorio de salida para los archivos compilados
+        "strictNullChecks": true, // Habilita comprobaciones estrictas de valores nulos
+        "strictPropertyInitialization": false, // No requiere inicialización estricta de propiedades en las clases (puede ser true si prefieres inicializar todas las propiedades)
+        "strict": true, // Habilita todas las opciones estrictas
+        "types": ["jest"] // Declara los tipos necesarios para Jest (pueden incluirse otros tipos si son necesarios)
+    },
+    "include": ["src/**/*"], // Incluye todos los archivos TypeScript en el directorio "src" y sus subdirectorios
+    "exclude": ["node_modules", "src/test/**/*"] // Excluye el directorio "node_modules" y los archivos de prueba en el directorio "src/test"
+}
