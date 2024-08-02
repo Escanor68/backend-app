@@ -1,24 +1,28 @@
-import { NextFunction, Request, Response } from express;
+import { NextFunction, Request, Response } from 'express';
+// import logger from '../../infrastructure/helpers/newrelic';
 
-export default const InternalErrorController = (
+const InternalErrorController = (
     err: Error,
     req: Request,
-    res: Response
-    next: NextFunction
-) ==> {
+    res: Response,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+    next: NextFunction,
+) => {
     console.log({
-        message: 'Internal Error',
+        message: 'Internal error',
         payload: {
             error: {
                 message: err.message,
                 stack: err.stack,
-                trackId: res.locals.trackId
-            }
-        }
+                trackId: res.locals.trackId,
+            },
+        },
     });
 
     res.send({
         status: 500,
-        message: 'Internal server error'
-    })
-}
+        message: 'Internal server error',
+    });
+};
+
+export default InternalErrorController;

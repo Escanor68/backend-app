@@ -1,62 +1,95 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+    CreateDateColumn,
+    UpdateDateColumn,
+} from 'typeorm';
 
-@Entity({ name: 'usuarios' })
+@Entity({ name: 'userPlayer' })
 export class UserPlayerEntity {
-    // Columna de clave primaria generada automáticamente con tipo UUID
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id: number;
 
-    // Columna para almacenar los nombres de los usuarios
+    @Column({
+        name: 'first_name',
+        type: 'varchar',
+        length: 50,
+        nullable: false,
+    })
+    firstName: string;
+
+    @Column({
+        name: 'last_name',
+        type: 'varchar',
+        length: 50,
+        nullable: false,
+    })
+    lastName: string;
+
     @Column({
         type: 'varchar',
         length: 100,
-        nullable: false, // No se permite el valor nulo
-        unique: true, // Valores únicos en esta columna
+        nullable: false,
+        unique: true,
     })
-    nombres: string;
+    email: string;
 
-    // Columna para almacenar los apellidos de los usuarios
-    @Column({
-        type: 'varchar',
-        length: 100,
-        nullable: false, // No se permite el valor nulo
-        unique: true, // Valores únicos en esta columna
-    })
-    apellidos: string;
-
-    // Columna para almacenar la fecha de nacimiento de los usuarios
-    @Column({ type: 'datetime' })
-    nacimiento: Date;
-
-    // Columna para almacenar el CUIT (Clave Única de Identificación Tributaria) de los usuarios
-    @Column({
-        type: 'varchar',
-        length: 20,
-        nullable: false, // No se permite el valor nulo
-    })
-    cuit: string;
-
-    // Columna para almacenar el domicilio de los usuarios
     @Column({
         type: 'varchar',
         length: 255,
+        nullable: false,
     })
-    domicilio: string;
+    password: string;
 
-    // Columna para almacenar el número de celular de los usuarios
     @Column({
+        name: 'birth_date',
+        type: 'date',
+        nullable: true,
+    })
+    birthDate: Date;
+
+    @Column({
+        type: 'enum',
+        enum: ['M', 'F', 'Other'],
+        nullable: true,
+    })
+    gender: 'M' | 'F' | 'Other';
+
+    @Column({
+        name: 'phone_number',
         type: 'varchar',
         length: 20,
-        nullable: false, // No se permite el valor nulo
+        nullable: true,
     })
-    celular: string;
+    phoneNumber: string;
 
-    // Columna para almacenar el correo electrónico de los usuarios
+    @CreateDateColumn({
+        name: 'created_at',
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+    })
+    createdAt: Date;
+
+    @UpdateDateColumn({
+        name: 'updated_at',
+        type: 'timestamp',
+        default: () => 'CURRENT_TIMESTAMP',
+        onUpdate: 'CURRENT_TIMESTAMP',
+    })
+    updatedAt: Date;
+
+    @Column({
+        type: 'enum',
+        enum: ['ACTIVE', 'INACTIVE'],
+        default: 'ACTIVE',
+    })
+    status: 'ACTIVE' | 'INACTIVE';
+
     @Column({
         type: 'varchar',
-        length: 100,
-        nullable: false, // No se permite el valor nulo
-        unique: true, // Valores únicos en esta columna
+        length: 10,
+        nullable: true,
     })
-    email: string;
+    dni: string;
 }

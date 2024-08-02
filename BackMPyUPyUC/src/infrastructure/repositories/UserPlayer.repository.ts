@@ -3,6 +3,7 @@ import { initializeConnection } from '../utils/decorators';
 import { Transactional } from 'typeorm-transactional';
 import { UserPlayerRepositoryInterface } from '../interfaces/UserPlayer.repository.interface';
 import { UserPlayerEntity } from '../../core/entities/UserPlayer.entity';
+import moment from 'moment';
 
 export class UserPlayerRepository implements UserPlayerRepositoryInterface {
     private userPlayerRepository: Repository<UserPlayerEntity>;
@@ -11,22 +12,8 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
         this.userPlayerRepository = userPlayerRepository;
     }
 
-    // Método para obtener todos los usuarios
-    @initializeConnection()
-    async getAll(): Promise<UserPlayerEntity[] | null> {
-        // Utilización de un QueryBuilder para obtener los usuarios como objetos crudos
-        return (
-            (await this.userPlayerRepository
-                .createQueryBuilder('userPlayer')
-                .select([])
-                .getRawMany()) || null
-        );
-    }
-
-    // Método para obtener un usuario por su ID
     @initializeConnection()
     async getId(id: number): Promise<UserPlayerEntity | null> {
-        // Utilización de un QueryBuilder para obtener un usuario por su ID como objeto crudo
         return (
             (await this.userPlayerRepository
                 .createQueryBuilder('userPlayer')
@@ -36,25 +23,21 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
         );
     }
 
-    // Método para buscar usuarios por nombre o apellido
     @initializeConnection()
-    async search(name: string): Promise<UserPlayerEntity | null> {
-        // Utilización de un QueryBuilder para buscar usuarios por nombre o apellido utilizando LIKE
-        return (
-            (await this.userPlayerRepository
+    async search(email: string): Promise<UserPlayerEntity | null> {
+        try {
+            const user = await this.userPlayerRepository
                 .createQueryBuilder('userPlayer')
-                .select([])
-                .where('nombres LIKE :name', {
-                    name: `%${name}%`,
-                })
-                .orWhere('apellidos LIKE :name', {
-                    name: `%${name}%`,
-                })
-                .getRawOne()) || null
-        );
+                .where('userPlayer.email = :email', { email })
+                .getOne();
+
+            return user || null;
+        } catch (error) {
+            console.error('Error in search:', error);
+            return null;
+        }
     }
 
-    // Método para insertar datos de usuario
     @initializeConnection()
     @Transactional()
     async insertData(data: UserPlayerEntity): Promise<UserPlayerEntity> {
@@ -62,16 +45,33 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
             const newData = new UserPlayerEntity();
             Object.assign(newData, data);
 
-            // Asignacion de la fecha de nacimiento
-            if (newData.nacimiento) {
-                newData.nacimiento = new Date(newData.nacimiento);
-            }
+            newData.birthDate = new Date(
+                moment(newData.birthDate).format('yyyy-mm-dd'),
+            );
+            newData.createdAt = new Date(
+                moment().format('yyyy-mm-dd hh:mm:ss'),
+            );
 
-            // Guardado de los datos del usuario en la base de datos
             return this.userPlayerRepository.save(newData);
         } catch (error) {
-            // Captura de errores y lanzamiento de una excepción en caso de error
             throw new Error('Error al insertar datos de usuario: ' + error);
+        }
+    }
+
+    @initializeConnection()
+    @Transactional()
+    async updateData(data: UserPlayerEntity): Promise<UserPlayerEntity> {
+        try {
+            const newData = new UserPlayerEntity();
+            Object.assign(newData, data);
+
+            newData.updatedAt = new Date(
+                moment().format('yyyy-mm-dd hh:mm:ss'),
+            );
+
+            return this.userPlayerRepository.save(newData);
+        } catch (error) {
+            throw new Error('Error al actualizar datos de usuario: ' + error);
         }
     }
 }

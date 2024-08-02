@@ -1,6 +1,0 @@
-{
-    "compilerOptions": {
-        "strict": true, // Habilita todas las opciones de comprobación estricta
-        "types": ["jest", "node"] // Declara los tipos necesarios para Jest y Node.js
-    }
-}
