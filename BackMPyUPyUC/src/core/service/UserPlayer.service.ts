@@ -8,7 +8,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { resetPasswordRepository } from '../../infrastructure/repositories';
 dotenv.config();
 
 interface JwtPayload {
