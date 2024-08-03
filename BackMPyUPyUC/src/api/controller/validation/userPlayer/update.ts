@@ -1,7 +1,6 @@
 import Joi from 'joi';
 import validateSchema from '../validateSchema';
 
-// Definición de la interfaz para el cuerpo de la solicitud
 interface Body {
     id: number;
     firstName?: string;

@@ -35,7 +35,6 @@ export default mysqlDs;
 const userPlayerRepository: Repository<UserPlayerEntity> =
     mysqlDs.getRepository(UserPlayerEntity);
 
-// Obtención del repositorio de usuarios a partir de la fuente de datos transaccional
 const userFieldRepository: Repository<UserFieldEntity> =
     mysqlDs.getRepository(UserFieldEntity);
 

@@ -158,7 +158,6 @@ export class UserPlayerService implements UserPlayerServiceInterface {
         newPassword: string,
     ): Promise<boolean> {
         try {
-            // Buscar el token en la base de datos
             const tokenData =
                 await this.resetPasswordRepository.findResetToken(token);
             if (!tokenData || tokenData.expiateToken < new Date(Date.now())) {
