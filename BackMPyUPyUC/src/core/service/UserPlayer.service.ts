@@ -10,10 +10,6 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 dotenv.config();
 
-interface JwtPayload {
-    userId: number;
-}
-
 export class UserPlayerService implements UserPlayerServiceInterface {
     private userPlayerRepository: UserPlayerRepositoryInterface;
     private resetPasswordRepository: ResetPasswordRepositoryInterface;
