@@ -2,13 +2,14 @@ import { UserPlayerServiceInterface } from '../interface/UserPlayer.service.inte
 import { UserPlayerRepositoryInterface } from '../../infrastructure/interfaces/UserPlayer.repository.interface';
 import { UserPlayerObject } from '../../infrastructure/interfaces/UserPlayer.interface';
 import { UserPlayerEntity } from '../entities/UserPlayer.entity';
+import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 export class UserPlayerService implements UserPlayerServiceInterface {
     private userPlayerRepository: UserPlayerRepositoryInterface;
     private saltRounds = 10;
-    private jwtSecret = process.env.JWT_SECRET;
+    private jwtSecret = process.env.JWT_SECRET || 'hello';
 
     constructor(userPlayerRepository: UserPlayerRepositoryInterface) {
         this.userPlayerRepository = userPlayerRepository;
@@ -99,6 +100,59 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             return { token, user };
         } catch (error) {
             throw new Error('Authentication failed: ' + error);
+        }
+    }
+
+    public async sendTokenReset(email: string): Promise<Boolean> {
+        try {
+            const user = await this.userPlayerRepository.search(email);
+            if (!user) return false;
+
+            const token = jwt.sign({ userId: user.id }, this.jwtSecret, {
+                expiresIn: '1h',
+            });
+
+            const transporter = nodemailer.createTransport({
+                service: 'Gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS,
+                },
+            });
+
+            const mailOptions = {
+                to: email,
+                subject: 'Password Reset',
+                text: `Click on this link to reset your password: ${process.env.FRONTEND_URL}/reset-password/${token}`,
+            };
+
+            await transporter.sendMail(mailOptions);
+            return true;
+        } catch (error) {
+            throw new Error('Send Token Reset Password failed: ' + error);
+        }
+    }
+
+    public async resetPassword(
+        token: string,
+        newPassword: string,
+    ): Promise<Boolean> {
+        try {
+            const decoded = jwt.verify(token, this.jwtSecret);
+            console.log(decoded);
+            const user = await this.userPlayerRepository.getId(decoded.userId);
+            if (!user) return false;
+
+            const hashedPassword = await bcrypt.hash(
+                newPassword,
+                this.saltRounds,
+            );
+
+            user.password = hashedPassword;
+            await this.userPlayerRepository.updateData(user);
+            return true;
+        } catch (error) {
+            throw new Error('Reset Password failed: ' + error);
         }
     }
 

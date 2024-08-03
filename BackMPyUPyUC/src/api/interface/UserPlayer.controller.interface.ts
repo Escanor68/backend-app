@@ -12,4 +12,12 @@ export interface UserPlayerControllerInterface {
     update(req: Request, res: Response, next: NextFunction): Promise<void>;
 
     inactivate(req: Request, res: Response, next: NextFunction): Promise<void>;
+
+    sendToken(req: Request, res: Response, next: NextFunction): Promise<void>;
+
+    resetPassword(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void>;
 }

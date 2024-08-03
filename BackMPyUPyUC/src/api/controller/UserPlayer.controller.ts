@@ -103,4 +103,59 @@ export class UserPlayerController implements UserPlayerControllerInterface {
             return;
         }
     }
+
+    async sendToken(req: Request, res: Response): Promise<void> {
+        try {
+            const validateBody = await validateInactiveUserPlayer(req.body);
+            if (validateBody.error) {
+                res.status(400).send(validateBody);
+                return;
+            }
+
+            const user = await userPlayerService.sendTokenReset(req.body);
+            if (!user) {
+                res.status(404).send({
+                    message: 'Usuario no encontrado',
+                });
+                return;
+            }
+
+            res.status(200).send({ response: 'Envio del Token' });
+        } catch (error) {
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
+            return;
+        }
+    }
+
+    async resetPassword(req: Request, res: Response): Promise<void> {
+        try {
+            const validateBody = await validateInactiveUserPlayer(req.body);
+            if (validateBody.error) {
+                res.status(400).send(validateBody);
+                return;
+            }
+
+            const { token } = req.params;
+            const { newPassword } = req.body;
+            const user = await userPlayerService.resetPassword(
+                token,
+                newPassword,
+            );
+            if (!user) {
+                res.status(404).send({
+                    message: 'Usuario no encontrado',
+                });
+                return;
+            }
+
+            res.status(200).send({ response: 'Reset Password' });
+        } catch (error) {
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
+            return;
+        }
+    }
 }

@@ -12,4 +12,8 @@ export interface UserPlayerServiceInterface {
     ): Promise<{ token: string; user: UserPlayerObject } | null>;
 
     inactivate(id: number): Promise<Boolean>;
+
+    sendTokenReset(email: string): Promise<Boolean>;
+
+    resetPassword(token: string, newPassword: string): Promise<Boolean>;
 }
