@@ -5,7 +5,7 @@ import { UserFieldEntity } from '../entities/UserField.entity';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 import { object } from 'joi';
 import { assign } from 'nodemailer/lib/shared';
 dotenv.config();
@@ -14,56 +14,74 @@ export class UserFieldService implements UserFieldServiceInterface {
     private userFieldRepository: UserFieldRepositoryInterface;
     private saltRounds = 10;
     private jwtSecret = process.env.JWT_SECRET || 'hello';
-    private emailUser = process.env.EMAIL_USER
-    private emailPass = process.env.EMAIL_PASS
+    private emailUser = process.env.EMAIL_USER;
+    private emailPass = process.env.EMAIL_PASS;
 
     constructor(userFieldRepository: UserFieldRepositoryInterface) {
         this.userFieldRepository = userFieldRepository;
     }
-    public async insertData(user: UserFieldObject): Promise<void>{
+    public async insertData(user: UserFieldObject): Promise<void> {
         try {
-            const hashedPassword = await bcrypt.hash (user.password, this.saltRounds);
+            const hashedPassword = await bcrypt.hash(
+                user.password,
+                this.saltRounds,
+            );
             user.status = 'ACTIVE';
             user.password = hashedPassword;
 
             await this.userFieldRepository.insertData(user);
-        }catch (error) {
+        } catch (error) {
             throw new Error('Error in insert data' + error);
         }
     }
 
-    public async update(id: number, newData: Partial<UserFieldEntity>): Promise<Boolean>{
+    public async update(
+        id: number,
+        newData: Partial<UserFieldEntity>,
+    ): Promise<Boolean> {
         try {
             const user = await this.userFieldRepository.getId(id);
 
-            if (!user) return false; 
+            if (!user) return false;
 
             if (newData.password) {
-                newData.password = await bcrypt.hash (newData.password, this.saltRounds);
+                newData.password = await bcrypt.hash(
+                    newData.password,
+                    this.saltRounds,
+                );
             }
 
-            Object.assign (user, newData);
+            Object.assign(user, newData);
 
             await this.userFieldRepository.updateData(user);
             return true;
-        }catch (error){
+        } catch (error) {
             throw new Error('Error in update data' + error);
         }
     }
 
-    public async authenticate(email: string, password: string,)
-    :Promise<{ token: string; user: UserFieldObject } | null> {
+    public async authenticate(
+        email: string,
+        password: string,
+    ): Promise<{ token: string; user: UserFieldObject } | null> {
         try {
             const user = await this.userFieldRepository.search(email);
             if (!user) throw new Error('User not found');
             if (!this.jwtSecret) throw new Error('JWT secret is not defined');
             if (user.status != 'ACTIVE') throw new Error('User inactive');
 
-            const isMatch = await this.validatePassword (user.password, password);
+            const isMatch = await this.validatePassword(
+                user.password,
+                password,
+            );
 
-            if (!isMatch) throw new Error ('Invalid Passsword');
+            if (!isMatch) throw new Error('Invalid Passsword');
 
-            const token = jwt.sign ({ id: user.id, email: user.email}, this.jwtSecret, {expiresIn: '1h'});
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                this.jwtSecret,
+                { expiresIn: '1h' },
+            );
 
             return { token, user };
         } catch (error) {
@@ -71,7 +89,7 @@ export class UserFieldService implements UserFieldServiceInterface {
         }
     }
 
-    public async inactivate(id: number): Promise<Boolean>{
+    public async inactivate(id: number): Promise<Boolean> {
         try {
             const user = await this.userFieldRepository.getId(id);
 
@@ -80,22 +98,23 @@ export class UserFieldService implements UserFieldServiceInterface {
             user.status = 'INACTIVE';
             await this.userFieldRepository.updateData(user);
             return true;
-
         } catch (error) {
             throw new Error('Error in inactive user' + error);
         }
     }
 
-    public async sendTokenReset(email: string): Promise<Boolean>{
+    public async sendTokenReset(email: string): Promise<Boolean> {
         try {
-            const user = await this.userFieldRepository.search (email);
+            const user = await this.userFieldRepository.search(email);
             if (!user) return false;
 
-            const token = await jwt.sign ({userId: user.id}, this.jwtSecret, {expiresIn: '1h'});
-            
+            const token = await jwt.sign({ userId: user.id }, this.jwtSecret, {
+                expiresIn: '1h',
+            });
+
             const transporter = nodemailer.createTransport({
-                service: 'gmail', 
-                auth: {user: this.emailUser, pass: this.emailPass}
+                service: 'gmail',
+                auth: { user: this.emailUser, pass: this.emailPass },
             });
 
             const mailOptions = {
@@ -106,24 +125,27 @@ export class UserFieldService implements UserFieldServiceInterface {
 
             await transporter.sendMail(mailOptions);
             return true;
-
         } catch (error) {
             throw new Error('Send Token Reset Password failed: ' + error);
         }
-
     }
 
-    public async resetPassword(token: string, newPassword: string): Promise<Boolean>{
+    public async resetPassword(
+        token: string,
+        newPassword: string,
+    ): Promise<Boolean> {
         try {
             const decoded = jwt.verify(token, this.jwtSecret);
 
             const user = await this.userFieldRepository.getId(decoded.userId);
             if (!user) return false;
 
-            const hashedPassword = await bcrypt.hash (newPassword, this.saltRounds);
+            const hashedPassword = await bcrypt.hash(
+                newPassword,
+                this.saltRounds,
+            );
 
             return true;
-
         } catch (error) {
             throw new Error('Reset Password failed: ' + error);
         }

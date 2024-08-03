@@ -7,6 +7,7 @@ import { DataSource, Repository } from 'typeorm';
 import dotenv from 'dotenv';
 import { UserPlayerEntity } from '../../core/entities/UserPlayer.entity';
 import { UserFieldEntity } from '../../core/entities/UserField.entity';
+import { ResetPasswordEntity } from '../../core/entities/ResetPassword.entity';
 //import { MercadoPagoEntity } from '../../core/entities/MercadoPago.entity';
 
 dotenv.config();
@@ -22,7 +23,7 @@ const ds = new DataSource({
     username: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_DATABASE as string,
-    entities: [UserPlayerEntity, UserFieldEntity, /*MercadoPagoEntity*/],
+    entities: [UserPlayerEntity, UserFieldEntity /*MercadoPagoEntity*/],
     synchronize: false,
     logging: false,
 });
@@ -37,6 +38,9 @@ const userPlayerRepository: Repository<UserPlayerEntity> =
 // Obtención del repositorio de usuarios a partir de la fuente de datos transaccional
 const userFieldRepository: Repository<UserFieldEntity> =
     mysqlDs.getRepository(UserFieldEntity);
+
+const resetPasswordRepository: Repository<ResetPasswordEntity> =
+    mysqlDs.getRepository(ResetPasswordEntity);
 /*
 const mercadoPagoRepository: Repository<MercadoPagoEntity> =
     mysqlDs.getRepository(MercadoPagoEntity);*/
@@ -45,5 +49,6 @@ export {
     MySql,
     userPlayerRepository,
     userFieldRepository,
+    resetPasswordRepository,
     //mercadoPagoRepository,
 };

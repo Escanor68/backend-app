@@ -1,22 +1,34 @@
 import { UserPlayerServiceInterface } from '../interface/UserPlayer.service.interface';
 import { UserPlayerRepositoryInterface } from '../../infrastructure/interfaces/UserPlayer.repository.interface';
+import { ResetPasswordRepositoryInterface } from '../../infrastructure/interfaces/ResetPassword.repository.interface';
 import { UserPlayerObject } from '../../infrastructure/interfaces/UserPlayer.interface';
 import { UserPlayerEntity } from '../entities/UserPlayer.entity';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
+import crypto from 'crypto';
+import { resetPasswordRepository } from '../../infrastructure/repositories';
 dotenv.config();
+
+interface JwtPayload {
+    userId: number;
+}
 
 export class UserPlayerService implements UserPlayerServiceInterface {
     private userPlayerRepository: UserPlayerRepositoryInterface;
+    private resetPasswordRepository: ResetPasswordRepositoryInterface;
     private saltRounds = 10;
     private jwtSecret = process.env.JWT_SECRET || 'hello';
-    private emailUser = process.env.EMAIL_USER
-    private emailPass = process.env.EMAIL_PASS
+    private emailUser = process.env.EMAIL_USER;
+    private emailPass = process.env.EMAIL_PASS;
 
-    constructor(userPlayerRepository: UserPlayerRepositoryInterface) {
+    constructor(
+        userPlayerRepository: UserPlayerRepositoryInterface,
+        resetPasswordRepository: ResetPasswordRepositoryInterface,
+    ) {
         this.userPlayerRepository = userPlayerRepository;
+        this.resetPasswordRepository = resetPasswordRepository;
     }
 
     public async insertData(user: UserPlayerObject): Promise<void> {
@@ -107,14 +119,18 @@ export class UserPlayerService implements UserPlayerServiceInterface {
         }
     }
 
-    public async sendTokenReset(email: string): Promise<Boolean> {
+    public async sendTokenReset(email: string): Promise<boolean> {
         try {
             const user = await this.userPlayerRepository.search(email);
             if (!user) return false;
 
-            const token = await jwt.sign({ userId: user.id }, this.jwtSecret, {
-                expiresIn: '1h',
-            });
+            const token = crypto.randomInt(100000, 999999).toString();
+
+            await this.resetPasswordRepository.storeResetToken(
+                user.id,
+                token,
+                new Date(Date.now() + 3600000),
+            );
 
             const transporter = nodemailer.createTransport({
                 service: 'Gmail',
@@ -140,11 +156,18 @@ export class UserPlayerService implements UserPlayerServiceInterface {
     public async resetPassword(
         token: string,
         newPassword: string,
-    ): Promise<Boolean> {
+    ): Promise<boolean> {
         try {
-            const decoded = jwt.verify(token, this.jwtSecret);
-            
-            const user = await this.userPlayerRepository.getId(decoded.userId);
+            // Buscar el token en la base de datos
+            const tokenData =
+                await this.resetPasswordRepository.findResetToken(token);
+            if (!tokenData || tokenData.expiateToken < new Date(Date.now())) {
+                throw new Error('Invalid or expired token');
+            }
+
+            const user = await this.userPlayerRepository.getId(
+                tokenData.userId,
+            );
             if (!user) return false;
 
             const hashedPassword = await bcrypt.hash(
@@ -154,6 +177,8 @@ export class UserPlayerService implements UserPlayerServiceInterface {
 
             user.password = hashedPassword;
             await this.userPlayerRepository.updateData(user);
+
+            await this.resetPasswordRepository.deleteResetToken(token);
             return true;
         } catch (error) {
             throw new Error('Reset Password failed: ' + error);
