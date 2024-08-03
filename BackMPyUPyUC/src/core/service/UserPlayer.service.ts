@@ -5,11 +5,15 @@ import { UserPlayerEntity } from '../entities/UserPlayer.entity';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv'
+dotenv.config();
 
 export class UserPlayerService implements UserPlayerServiceInterface {
     private userPlayerRepository: UserPlayerRepositoryInterface;
     private saltRounds = 10;
     private jwtSecret = process.env.JWT_SECRET || 'hello';
+    private emailUser = process.env.EMAIL_USER
+    private emailPass = process.env.EMAIL_PASS
 
     constructor(userPlayerRepository: UserPlayerRepositoryInterface) {
         this.userPlayerRepository = userPlayerRepository;
@@ -115,8 +119,8 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             const transporter = nodemailer.createTransport({
                 service: 'Gmail',
                 auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
+                    user: this.emailUser,
+                    pass: this.emailPass,
                 },
             });
 
