@@ -112,7 +112,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             const user = await this.userPlayerRepository.search(email);
             if (!user) return false;
 
-            const token = jwt.sign({ userId: user.id }, this.jwtSecret, {
+            const token = await jwt.sign({ userId: user.id }, this.jwtSecret, {
                 expiresIn: '1h',
             });
 
@@ -143,7 +143,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
     ): Promise<Boolean> {
         try {
             const decoded = jwt.verify(token, this.jwtSecret);
-            console.log(decoded);
+            
             const user = await this.userPlayerRepository.getId(decoded.userId);
             if (!user) return false;
 
