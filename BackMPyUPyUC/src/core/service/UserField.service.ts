@@ -1,17 +1,18 @@
 import { UserFieldServiceInterface } from '../interface/UserField.service.interface';
 import { UserFieldRepositoryInterface } from '../../infrastructure/interfaces/UserField.repository.interface';
+import { ResetPasswordRepositoryInterface } from '../../infrastructure/interfaces/ResetPassword.repository.interface';
 import { UserFieldObject } from '../../infrastructure/interfaces/UserField.interface';
 import { UserFieldEntity } from '../entities/UserField.entity';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { object } from 'joi';
-import { assign } from 'nodemailer/lib/shared';
+import crypto from 'crypto';    
 dotenv.config();
 
 export class UserFieldService implements UserFieldServiceInterface {
     private userFieldRepository: UserFieldRepositoryInterface;
+    private resetPasswordRepository: ResetPasswordRepositoryInterface;
     private saltRounds = 10;
     private jwtSecret = process.env.JWT_SECRET || 'hello';
     private emailUser = process.env.EMAIL_USER;
@@ -19,7 +20,7 @@ export class UserFieldService implements UserFieldServiceInterface {
 
     constructor(userFieldRepository: UserFieldRepositoryInterface) {
         this.userFieldRepository = userFieldRepository;
-    }
+    }   
     public async insertData(user: UserFieldObject): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(
@@ -108,9 +109,13 @@ export class UserFieldService implements UserFieldServiceInterface {
             const user = await this.userFieldRepository.search(email);
             if (!user) return false;
 
-            const token = await jwt.sign({ userId: user.id }, this.jwtSecret, {
-                expiresIn: '1h',
-            });
+            const token = crypto.randomInt(100000, 999999).toString();
+
+            await this.resetPasswordRepository.storeResetToken(
+                user.id,
+                token,
+                new Date(Date.now() + 3600000),
+            );
 
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -135,9 +140,13 @@ export class UserFieldService implements UserFieldServiceInterface {
         newPassword: string,
     ): Promise<Boolean> {
         try {
-            const decoded = jwt.verify(token, this.jwtSecret);
+            const tokenData =
+                await this.resetPasswordRepository.findResetToken(token);
+            if (!tokenData || tokenData.expiateToken < new Date(Date.now())) {
+                throw new Error('Invalid or expired token');
+            }
 
-            const user = await this.userFieldRepository.getId(decoded.userId);
+            const user = await this.userFieldRepository.getId(tokenData.userId);
             if (!user) return false;
 
             const hashedPassword = await bcrypt.hash(
@@ -145,6 +154,11 @@ export class UserFieldService implements UserFieldServiceInterface {
                 this.saltRounds,
             );
 
+            user.password = hashedPassword;
+            await this.userFieldRepository.updateData(user);
+
+            await this.resetPasswordRepository.deleteResetToken(token);
+            
             return true;
         } catch (error) {
             throw new Error('Reset Password failed: ' + error);
