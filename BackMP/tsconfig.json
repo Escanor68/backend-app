@@ -16,7 +16,7 @@
     },
     "include": [
         "src/**/*",
-        "src/infrastructure/interfaces/UserPlayer.interface.ts"
+        "src/infrastructure/interfaces/MercadoPago.interface.ts"
     ],
     "exclude": ["node_modules", "src/test/**/*"]
 }

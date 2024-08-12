@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import LivenessController from '../api/controller/Liveness.controller';
-import ReadinessController from '../api/controller/Readiness.controller';
-
+import LivenessController from '../api/controllers/Liveness.controller';
+import ReadinessController from '../api/controllers/Readiness.controller';
 const router = Router();
 
 router.get(`/hola-mundo`, ReadinessController);

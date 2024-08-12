@@ -8,8 +8,8 @@ dotenv.config();
 import k8sRoutes from './routes/k8s';
 import routesservice from './routes/routesservice';
 
-import NotFoundController from './api/controller/NotFound.controller';
-import InternalErrorController from './api/controller/InternalError.controller';
+import NotFoundController from './api/controllers/NotFound.controller';
+import InternalErrorController from './api/controllers/InternalError.controller';
 
 const app = express();
 
