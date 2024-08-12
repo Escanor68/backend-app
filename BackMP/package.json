@@ -1,7 +1,7 @@
 {
-  "name": "backmpyupyuc",
+  "name": "backmp",
   "version": "1.0.0",
-  "description": "Backend de los usuarios y de Mercado Pago",
+  "description": "Backend de los usuarios",
   "main": "index.js",
   "scripts": {
     "start": "node .",

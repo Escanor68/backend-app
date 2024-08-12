@@ -1,0 +1,19 @@
+# misc
+.DS_Store
+.vscode
+.idea
+.env
+.env.*
+
+#custom
+xunit.xml
+.nyc_output
+coverage
+node_modules/
+env.json
+package-lock.json
+k8s/
+dist/
+
+CHANGELOG.md
+test-report.html
