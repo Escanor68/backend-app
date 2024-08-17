@@ -15,7 +15,7 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
         try {
             switch (webhookEvent.type.split('.')[0]) {
                 case 'payment':
-                    // Aquí puedes manejar los eventos relacionados con pagos
+                    await this.updateRecordAndSendInfo.call(this, webhookEvent);
                     break;
                 default:
                     throw new Error('Unhandled event type');
@@ -33,21 +33,16 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
         }
     }
 
-    async updateRecordAndSendInfo(
-        recordId: string,
-        updatedData: any,
-    ): Promise<void> {
+    // agregar el registro a la base de datos IMPORTANTE no listo
+    async updateRecordAndSendInfo(updatedData: any): Promise<void> {
         try {
-            // Asume que tienes un repositorio con un método `update`
-            await this.mercadoPagoClient.updateRecord(recordId, updatedData);
-
-            // Luego puedes enviar la información actualizada
             this.sendInfo(updatedData);
         } catch (error) {
             throw new Error('Failed to update record and send info: ' + error);
         }
     }
 
+    // enviar la información actualizada
     private sendInfo(data: any): void {
         // Lógica para enviar la información (ejemplo: a un servicio externo o notificación)
         console.log('Sending info:', data);
