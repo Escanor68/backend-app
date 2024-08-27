@@ -1,3 +1,4 @@
 export interface MercadoPagoClientInterface {
-    createPayment(paymentData: any): Promise<any>;
+    createOrder(paymentData: any): Promise<any>;
+    receiveWebhook(payment: any): Promise<any>;
 }

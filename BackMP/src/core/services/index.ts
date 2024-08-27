@@ -1,4 +1,10 @@
 import { MercadoPagoService } from './MercadoPago.service';
-import { mercadoPagoClient } from '../../infrastructure/clients';
+import {
+    mercadoPagoClient,
+    apiFutbolClient,
+} from '../../infrastructure/clients';
 
-export const mercadoPagoService = new MercadoPagoService(mercadoPagoClient);
+export const mercadoPagoService = new MercadoPagoService(
+    mercadoPagoClient,
+    apiFutbolClient,
+);

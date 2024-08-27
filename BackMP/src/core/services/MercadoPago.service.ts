@@ -1,21 +1,31 @@
 import { MercadoPagoClientInterface } from '../../infrastructure/interfaces/MercadoPago.client.interface';
 import { MercadoPagoServiceInterface } from '../interfaces/MercadoPago.service.interface';
+import { ApiFutbolClientInterface } from '../../infrastructure/interfaces/ApiFutbol.client.interface';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 export class MercadoPagoService implements MercadoPagoServiceInterface {
-    mercadoPagoClient: MercadoPagoClientInterface;
+    private mercadoPagoClient: MercadoPagoClientInterface;
+    private apiFutbolClient: ApiFutbolClientInterface;
 
-    constructor(mercadoPagoClient: MercadoPagoClientInterface) {
+    constructor(
+        mercadoPagoClient: MercadoPagoClientInterface,
+        apiFutbolClient: ApiFutbolClientInterface,
+    ) {
         this.mercadoPagoClient = mercadoPagoClient;
+        this.apiFutbolClient = apiFutbolClient;
     }
 
+    /**
+     * Maneja la recepción de un evento webhook.
+     * @param webhookEvent - El evento webhook recibido.
+     */
     async webhookReceive(webhookEvent: any): Promise<void> {
         try {
             switch (webhookEvent.type.split('.')[0]) {
                 case 'payment':
-                    await this.updateRecordAndSendInfo.call(this, webhookEvent);
+                    await this.updateRecordAndSendInfo(webhookEvent);
                     break;
                 default:
                     throw new Error('Unhandled event type');
@@ -25,26 +35,40 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
         }
     }
 
+    /**
+     * Crea un nuevo pago utilizando el cliente de Mercado Pago.
+     * @param paymentData - Los datos necesarios para crear el pago.
+     * @returns La respuesta de la creación del pago.
+     */
     async createPayment(paymentData: any): Promise<any> {
         try {
-            return await this.mercadoPagoClient.createPayment(paymentData);
+            return await this.mercadoPagoClient.createOrder(paymentData);
         } catch (error) {
             throw new Error('Failed to create payment: ' + error);
         }
     }
 
-    // agregar el registro a la base de datos IMPORTANTE no listo
+    /**
+     * Actualiza un registro en la base de datos y envía la información actualizada.
+     * @param updatedData - Los datos que se han actualizado.
+     */
     async updateRecordAndSendInfo(updatedData: any): Promise<void> {
         try {
-            this.sendInfo(updatedData);
+            // Aquí iría la lógica para actualizar la base de datos
+            console.log('Updating record with data:', updatedData);
+
+            // Envía la información actualizada utilizando el cliente ApiFutbolClient
+            await this.apiFutbolClient.sendPaymentInfo(updatedData);
         } catch (error) {
             throw new Error('Failed to update record and send info: ' + error);
         }
     }
 
-    // enviar la información actualizada
+    /**
+     * Envía la información actualizada a un servicio externo o como notificación.
+     * @param data - La información que se va a enviar.
+     */
     private sendInfo(data: any): void {
-        // Lógica para enviar la información (ejemplo: a un servicio externo o notificación)
         console.log('Sending info:', data);
     }
 }

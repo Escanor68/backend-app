@@ -1,3 +1,3 @@
 export interface ApiFutbolClientInterface {
-    sendPaymentCompleted(paymentData: any): Promise<void>;
+    sendPaymentInfo(paymentData: any): Promise<void>;
 }
