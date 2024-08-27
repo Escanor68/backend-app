@@ -12,4 +12,9 @@ router.post(
     mercadoPagoController.webhookReceive,
 );
 
+router.get(
+    `/api/v1/mercadoPago/getPaymentMethod`,
+    mercadoPagoController.getPaymentMethod,
+);
+
 export default router;

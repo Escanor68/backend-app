@@ -11,4 +11,9 @@ export interface MercadoPagoControllerInterface {
         res: Response,
         next: NextFunction,
     ): Promise<void>;
+    getPaymentMethod(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void>;
 }

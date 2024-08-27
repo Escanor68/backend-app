@@ -1,6 +1,7 @@
 import { MercadoPagoConfig, Payment } from 'mercadopago';
-import dotenv from 'dotenv';
 import { MercadoPagoClientInterface } from '../interfaces/MercadoPago.client.interface';
+import { axiosMercadoPagoApi } from '../setting/axios';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -14,7 +15,9 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
         }
 
         // Configuración del cliente de Mercado Pago
-        this.client = new MercadoPagoConfig({ accessToken: token });
+        this.client = new MercadoPagoConfig({
+            accessToken: token,
+        });
     }
 
     /**
@@ -28,8 +31,7 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
             const payment = new Payment(this.client);
 
             // Crea la preferencia de pago
-            const result = await payment.create({ body: paymentData });
-            return result;
+            return await payment.create({ body: paymentData });
         } catch (error) {
             throw new Error('Failed to create payment order: ' + error);
         }
@@ -52,6 +54,21 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
             return null;
         } catch (error) {
             throw new Error('Failed to process webhook: ' + error);
+        }
+    }
+
+    /**
+     * Obtiene los métodos de pago disponibles en Mercado Pago.
+     * @returns Una promesa que se resuelve con una lista de métodos de pago.
+     */
+    async getPaymentMethod(): Promise<Array<object>> {
+        try {
+            const response = await axiosMercadoPagoApi.get(
+                '/v1/payment_methods',
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error('Failed to get payment methods: ' + error);
         }
     }
 }

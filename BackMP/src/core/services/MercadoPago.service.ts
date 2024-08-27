@@ -65,10 +65,15 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
     }
 
     /**
-     * Envía la información actualizada a un servicio externo o como notificación.
-     * @param data - La información que se va a enviar.
+     * Retrieves the payment methods using the MercadoPago client.
+     * @returns An array of objects representing the payment methods.
+     * @throws {Error} If there is a failure to retrieve the payment methods.
      */
-    private sendInfo(data: any): void {
-        console.log('Sending info:', data);
+    async getPaymentMethod(): Promise<Array<object>> {
+        try {
+            return await this.mercadoPagoClient.getPaymentMethod();
+        } catch (error) {
+            throw new Error('Failed to get payment methods: ' + error);
+        }
     }
 }
