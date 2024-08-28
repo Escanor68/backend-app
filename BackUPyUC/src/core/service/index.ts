@@ -12,4 +12,5 @@ export const userPlayerService = new UserPlayerService(
 
 export const userFieldService = new UserFieldService(
     userFieldRepository,
+    resetPasswordRepository,
 );

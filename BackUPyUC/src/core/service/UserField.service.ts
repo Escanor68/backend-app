@@ -18,9 +18,12 @@ export class UserFieldService implements UserFieldServiceInterface {
     private emailUser = process.env.EMAIL_USER;
     private emailPass = process.env.EMAIL_PASS;
 
-    constructor(userFieldRepository: UserFieldRepositoryInterface) {
+    constructor(userFieldRepository: UserFieldRepositoryInterface,
+        resetPasswordRepository: ResetPasswordRepositoryInterface,
+    ) {
         this.userFieldRepository = userFieldRepository;
-    }   
+        this.resetPasswordRepository = this.resetPasswordRepository
+    }
     public async insertData(user: UserFieldObject): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(
