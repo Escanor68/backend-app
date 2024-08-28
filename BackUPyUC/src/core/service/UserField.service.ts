@@ -22,7 +22,7 @@ export class UserFieldService implements UserFieldServiceInterface {
         resetPasswordRepository: ResetPasswordRepositoryInterface,
     ) {
         this.userFieldRepository = userFieldRepository;
-        this.resetPasswordRepository = this.resetPasswordRepository
+        this.resetPasswordRepository = resetPasswordRepository
     }
     public async insertData(user: UserFieldObject): Promise<void> {
         try {
