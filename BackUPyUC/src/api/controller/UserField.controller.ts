@@ -4,10 +4,9 @@ import { userFieldService } from '../../core/service/';
 import validateLogin from './validation/userField/login';
 import validateNewUserField from './validation/userField/insertData';
 import validateUpdateUserField from './validation/userField/update';
-import validateInactiveUserField from './validation/userField/inactive';    
+import validateInactiveUserField from './validation/userField/inactive';
 
 export class UserFieldController implements UserFieldControllerInterface {
-
     async login(req: Request, res: Response): Promise<void> {
         try {
             const validateBody = await validateLogin(req.body);
@@ -20,13 +19,17 @@ export class UserFieldController implements UserFieldControllerInterface {
             const user = await userFieldService.authenticate(email, password);
 
             if (!user) {
-                res.status(404).send({message: 'Usuario no encontrado por ID: ' + email});
+                res.status(404).send({
+                    message: 'Usuario no encontrado por ID: ' + email,
+                });
                 return;
             }
 
             res.status(200).send({ response: user });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
@@ -43,7 +46,9 @@ export class UserFieldController implements UserFieldControllerInterface {
 
             res.status(200).send({ response: 'Usuario creado' });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
@@ -59,13 +64,15 @@ export class UserFieldController implements UserFieldControllerInterface {
             const user = await userFieldService.update(req.body.id, req.body);
 
             if (!user) {
-                res.status(404).send({message: 'Usuario no encontrado'});
+                res.status(404).send({ message: 'Usuario no encontrado' });
                 return;
             }
 
             res.status(200).send({ response: user });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
@@ -80,13 +87,15 @@ export class UserFieldController implements UserFieldControllerInterface {
 
             const user = await userFieldService.inactivate(req.body);
             if (!user) {
-                res.status(404).send({message: 'Usuario no encontrado'});
+                res.status(404).send({ message: 'Usuario no encontrado' });
                 return;
             }
 
             res.status(200).send({ response: 'Usuario inactivado' });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
@@ -101,13 +110,15 @@ export class UserFieldController implements UserFieldControllerInterface {
 
             const user = await userFieldService.sendTokenReset(req.body);
             if (!user) {
-                res.status(404).send({message: 'Usuario no encontrado'});
+                res.status(404).send({ message: 'Usuario no encontrado' });
                 return;
             }
 
             res.status(200).send({ response: 'Envio del Token' });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
@@ -127,19 +138,16 @@ export class UserFieldController implements UserFieldControllerInterface {
                 newPassword,
             );
             if (!user) {
-                res.status(404).send({message: 'Usuario no encontrado'});
+                res.status(404).send({ message: 'Usuario no encontrado' });
                 return;
             }
 
             res.status(200).send({ response: 'Reset Password' });
         } catch (error) {
-            res.status(500).send({message: 'Error interno del servidor: ' + error});
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error,
+            });
             return;
         }
     }
-
-
-
-
-
 }

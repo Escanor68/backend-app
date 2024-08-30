@@ -12,7 +12,7 @@ export class UserFieldEntity {
     id: number;
 
     @Column({
-        name: 'Field_name',
+        name: 'field_name',
         type: 'varchar',
         length: 50,
         nullable: false,

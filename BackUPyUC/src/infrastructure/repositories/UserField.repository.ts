@@ -45,7 +45,7 @@ export class UserFieldRepository implements UserFieldRepositoryInterface {
             const newData = new UserFieldEntity();
             Object.assign(newData, data);
 
-            newData.createdAt = new Date(moment().format('yyyy-mm-dd hh:mm:ss'));
+            newData.createdAt = new Date();
 
             return this.userFieldRepository.save(newData);
         } catch (error) {
@@ -60,7 +60,9 @@ export class UserFieldRepository implements UserFieldRepositoryInterface {
             const newData = new UserFieldEntity();
             Object.assign(newData, data);
 
-            newData.updatedAt = new Date(moment().format('yyyy-mm-dd hh:mm:ss'));
+            newData.updatedAt = new Date(
+                moment().format('yyyy-mm-dd hh:mm:ss'),
+            );
 
             return this.userFieldRepository.save(newData);
         } catch (error) {

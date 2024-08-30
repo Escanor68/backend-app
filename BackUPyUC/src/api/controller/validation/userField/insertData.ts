@@ -2,26 +2,22 @@ import Joi from 'joi';
 import validateSchema from '../validateSchema';
 
 interface Body {
-    Name: string;
+    field_name: string;
     email: string;
     password: string;
     phoneNumber: string;
-    createdAt: string;
-    updatedAt: string;
-    status: string;
-    dni: string;
+    tax_id: string;
+    address: string;
 }
 
 const validateFunction = (body: Body) => {
     const schema = Joi.object({
-        Name: Joi.string().required(),
+        field_name: Joi.string().required(),
         email: Joi.string().required(),
         password: Joi.string().required(),
         phoneNumber: Joi.string().required(),
-        createdAt: Joi.string().required(),
-        updatedAt: Joi.string().required(),
-        status: Joi.string().required(),
-        dni: Joi.string().required(),
+        tax_id: Joi.string().required(),
+        address: Joi.string().required(),
     });
 
     return validateSchema(schema, body);
