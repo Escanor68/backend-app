@@ -18,9 +18,8 @@ export class ResetPasswordRepository
     async findResetToken(token: string): Promise<ResetPasswordEntity | null> {
         try {
             const result = await this.resetPasswordRepository
-                .createQueryBuilder('resetPassword')
-                .where('resetPassword.token = :token', { token })
-                .andWhere('resetPassword.expiresAt > :now', { now: new Date() })
+                .createQueryBuilder('restorePassword')
+                .where('token = :token', { token })
                 .getOne();
 
             return result || null;
@@ -34,7 +33,7 @@ export class ResetPasswordRepository
     async deleteResetToken(token: string): Promise<Boolean> {
         try {
             const result = await this.resetPasswordRepository
-                .createQueryBuilder()
+                .createQueryBuilder('restorePassword')
                 .delete()
                 .from(ResetPasswordEntity)
                 .where('token = :token', { token })
@@ -59,7 +58,6 @@ export class ResetPasswordRepository
             newToken.userId = userId;
             newToken.token = token;
             newToken.expiateToken = expiateToken;
-            expiateToken;
             return await this.resetPasswordRepository.save(newToken);
         } catch (error) {
             throw new Error(

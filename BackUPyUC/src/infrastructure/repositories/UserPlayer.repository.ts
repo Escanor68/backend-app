@@ -28,7 +28,9 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
         try {
             const user = await this.userPlayerRepository
                 .createQueryBuilder('userPlayer')
-                .where('userPlayer.email = :email', { email })
+                .where('userPlayer.email = :email', {
+                    email: email.trim().toLowerCase(),
+                })
                 .getOne();
 
             return user || null;
@@ -45,13 +47,6 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
             const newData = new UserPlayerEntity();
             Object.assign(newData, data);
 
-            newData.birthDate = new Date(
-                moment(newData.birthDate).format('yyyy-mm-dd'),
-            );
-            newData.createdAt = new Date(
-                moment().format('yyyy-mm-dd hh:mm:ss'),
-            );
-
             return this.userPlayerRepository.save(newData);
         } catch (error) {
             throw new Error('Error al insertar datos de usuario: ' + error);
@@ -64,10 +59,6 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
         try {
             const newData = new UserPlayerEntity();
             Object.assign(newData, data);
-
-            newData.updatedAt = new Date(
-                moment().format('yyyy-mm-dd hh:mm:ss'),
-            );
 
             return this.userPlayerRepository.save(newData);
         } catch (error) {

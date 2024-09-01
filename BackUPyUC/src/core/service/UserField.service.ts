@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import crypto from 'crypto';    
+import crypto from 'crypto';
 dotenv.config();
 
 export class UserFieldService implements UserFieldServiceInterface {
@@ -18,11 +18,12 @@ export class UserFieldService implements UserFieldServiceInterface {
     private emailUser = process.env.EMAIL_USER;
     private emailPass = process.env.EMAIL_PASS;
 
-    constructor(userFieldRepository: UserFieldRepositoryInterface,
+    constructor(
+        userFieldRepository: UserFieldRepositoryInterface,
         resetPasswordRepository: ResetPasswordRepositoryInterface,
     ) {
         this.userFieldRepository = userFieldRepository;
-        this.resetPasswordRepository = resetPasswordRepository
+        this.resetPasswordRepository = resetPasswordRepository;
     }
     public async insertData(user: UserFieldObject): Promise<void> {
         try {
@@ -161,7 +162,7 @@ export class UserFieldService implements UserFieldServiceInterface {
             await this.userFieldRepository.updateData(user);
 
             await this.resetPasswordRepository.deleteResetToken(token);
-            
+
             return true;
         } catch (error) {
             throw new Error('Reset Password failed: ' + error);

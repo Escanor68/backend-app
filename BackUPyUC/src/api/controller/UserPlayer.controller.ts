@@ -5,6 +5,8 @@ import validateLogin from './validation/userPlayer/login';
 import validateNewUserPlayer from './validation/userPlayer/insertData';
 import validateUpdateUserPlayer from './validation/userPlayer/update';
 import validateInactiveUserPlayer from './validation/userPlayer/inactive';
+import validateSendTokenUserPlayer from './validation/userPlayer/sendtoken';
+import validateRecibeTokenUserPlayer from './validation/userPlayer/recibeToken';
 
 export class UserPlayerController implements UserPlayerControllerInterface {
     async login(req: Request, res: Response): Promise<void> {
@@ -20,7 +22,7 @@ export class UserPlayerController implements UserPlayerControllerInterface {
 
             if (!user) {
                 res.status(404).send({
-                    message: 'Usuario no encontrado por ID: ' + email,
+                    message: 'Usuario no encontrado por mail: ' + email,
                 });
                 return;
             }
@@ -70,7 +72,7 @@ export class UserPlayerController implements UserPlayerControllerInterface {
                 return;
             }
 
-            res.status(200).send({ response: user });
+            res.status(200).send({ message: 'User update' });
         } catch (error) {
             res.status(500).send({
                 message: 'Error interno del servidor: ' + error,
@@ -106,13 +108,13 @@ export class UserPlayerController implements UserPlayerControllerInterface {
 
     async sendToken(req: Request, res: Response): Promise<void> {
         try {
-            const validateBody = await validateInactiveUserPlayer(req.body);
+            const validateBody = await validateSendTokenUserPlayer(req.body);
             if (validateBody.error) {
                 res.status(400).send(validateBody);
                 return;
             }
 
-            const user = await userPlayerService.sendTokenReset(req.body);
+            const user = await userPlayerService.sendTokenReset(req.body.email);
             if (!user) {
                 res.status(404).send({
                     message: 'Usuario no encontrado',
@@ -131,7 +133,7 @@ export class UserPlayerController implements UserPlayerControllerInterface {
 
     async resetPassword(req: Request, res: Response): Promise<void> {
         try {
-            const validateBody = await validateInactiveUserPlayer(req.body);
+            const validateBody = await validateRecibeTokenUserPlayer(req.body);
             if (validateBody.error) {
                 res.status(400).send(validateBody);
                 return;

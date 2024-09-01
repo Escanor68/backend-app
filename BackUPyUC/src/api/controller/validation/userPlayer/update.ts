@@ -10,9 +10,6 @@ interface Body {
     birthDate?: string;
     gender?: string;
     phoneNumber?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    status?: string;
     dni?: string;
 }
 
@@ -26,9 +23,6 @@ const validateFunction = (body: Body) => {
         birthDate: Joi.string(),
         gender: Joi.string(),
         phoneNumber: Joi.string(),
-        createdAt: Joi.string(),
-        updatedAt: Joi.string(),
-        status: Joi.string(),
         dni: Joi.string(),
     });
 

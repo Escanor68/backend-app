@@ -3,6 +3,7 @@ import { UserPlayerRepositoryInterface } from '../../infrastructure/interfaces/U
 import { ResetPasswordRepositoryInterface } from '../../infrastructure/interfaces/ResetPassword.repository.interface';
 import { UserPlayerObject } from '../../infrastructure/interfaces/UserPlayer.interface';
 import { UserPlayerEntity } from '../entities/UserPlayer.entity';
+import moment from 'moment';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -32,7 +33,10 @@ export class UserPlayerService implements UserPlayerServiceInterface {
                 user.password,
                 this.saltRounds,
             );
+
             user.status = 'ACTIVE';
+            user.createdAt = moment(new Date()).format();
+            user.birthDate = moment(user.birthDate, 'DD/MM/YYYY').format();
             user.password = hashedPassword;
 
             await this.userPlayerRepository.insertData(user);
@@ -76,6 +80,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             }
 
             Object.assign(user, newData);
+            user.updateAt = moment(new Date()).format();
 
             await this.userPlayerRepository.updateData(user);
             return true;
@@ -90,7 +95,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
     ): Promise<{ token: string; user: UserPlayerObject } | null> {
         try {
             const user = await this.userPlayerRepository.search(email);
-            if (!user) throw new Error('User not found');
+            if (!user) return null;
             if (!this.jwtSecret) throw new Error('JWT secret is not defined');
             if (user.status != 'ACTIVE') throw new Error('User inactive');
 
@@ -138,7 +143,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             const mailOptions = {
                 to: email,
                 subject: 'Password Reset',
-                text: `Click on this link to reset your password: ${process.env.FRONTEND_URL}/reset-password/${token}`,
+                text: `${token}`,
             };
 
             await transporter.sendMail(mailOptions);

@@ -3,16 +3,15 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     CreateDateColumn,
-    UpdateDateColumn,
 } from 'typeorm';
 
-@Entity({ name: 'userField' })
+@Entity({ name: 'restorePassword' })
 export class ResetPasswordEntity {
     @PrimaryGeneratedColumn()
     userId: number;
 
     @Column({
-        name: 'Field_name',
+        name: 'token',
         type: 'varchar',
         length: 50,
         nullable: false,
