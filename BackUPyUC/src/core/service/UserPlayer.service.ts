@@ -143,7 +143,59 @@ export class UserPlayerService implements UserPlayerServiceInterface {
             const mailOptions = {
                 to: email,
                 subject: 'Password Reset',
-                text: `${token}`,
+                html: `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Password Reset</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                background-color: #f4f4f4;
+                                margin: 0;
+                                padding: 20px;
+                            }
+                            .container {
+                                max-width: 600px;
+                                margin: 0 auto;
+                                background: #ffffff;
+                                padding: 20px;
+                                border-radius: 8px;
+                                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                            }
+                            h1 {
+                                color: #333333;
+                            }
+                            .token {
+                                display: block;
+                                font-size: 18px;
+                                color: #333333;
+                                margin-top: 10px;
+                                font-weight: bold;
+                            }
+                            .footer {
+                                margin-top: 20px;
+                                font-size: 14px;
+                                color: #666666;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <h1>Password Reset Request</h1>
+                            <p>Hello,</p>
+                            <p>We received a request to reset your password. Here is your token:</p>
+                            <p class="token">${token}</p>
+                            <p>If you didn't request a password reset, please ignore this email.</p>
+                            <p>Best regards,<br>Your Company</p>
+                            <div class="footer">
+                                <p>If you have any questions, feel free to contact us at support@yourcompany.com.</p>
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `,
             };
 
             await transporter.sendMail(mailOptions);
