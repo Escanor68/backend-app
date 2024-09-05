@@ -8,7 +8,7 @@ export const axiosApiFutbol = axios.create({
 });
 
 export const axiosMercadoPagoApi = axios.create({
-    baseURL: 'https://api.mercadopago.com',
+    baseURL: process.env.MERCADOPAGO_API,
     headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
