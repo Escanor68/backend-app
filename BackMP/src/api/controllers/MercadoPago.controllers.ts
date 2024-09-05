@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { MercadoPagoControllerInterface } from '../interfaces/MercadoPago.controller.interface';
 import { mercadoPagoService } from '../../core/services';
+import validatePaymentCreateRequest from './validation/userField/paymentCreate';
 
 export class MercadoPagoController implements MercadoPagoControllerInterface {
     /**
@@ -28,9 +29,15 @@ export class MercadoPagoController implements MercadoPagoControllerInterface {
      * @param req - La solicitud HTTP.
      * @param res - La respuesta HTTP.
      */
-    async createPayment(req: Request, res: Response): Promise<void> {
+    async createOrder(req: Request, res: Response): Promise<void> {
         try {
-            const paymentResponse = await mercadoPagoService.createPayment(
+            const validateBody = await validatePaymentCreateRequest(req.body);
+            if (validateBody.error) {
+                res.status(400).send(validateBody);
+                return;
+            }
+
+            const paymentResponse = await mercadoPagoService.createOrder(
                 req.body,
             );
             res.status(200).send({

@@ -1,5 +1,5 @@
 import { PaymentMethod } from 'mercadopago';
-import { PaymentDataInterface } from '../../infrastructure/interfaces/PaymentData.interface';
+import { PaymentCreateData } from '../../infrastructure/interfaces/PaymentDataCard.interface';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 
 interface WebhookEvent {
@@ -7,8 +7,7 @@ interface WebhookEvent {
 }
 
 export interface MercadoPagoServiceInterface {
-    createPayment(paymentData: PaymentDataInterface): Promise<PaymentResponse>;
+    createOrder(paymentData: PaymentCreateData): Promise<PaymentResponse>;
     webhookReceive(webhookEvent: WebhookEvent): Promise<void>;
-    updateRecordAndSendInfo(recordId: string, updatedData: any): Promise<void>;
     getPaymentMethod(): Promise<PaymentMethod>;
 }

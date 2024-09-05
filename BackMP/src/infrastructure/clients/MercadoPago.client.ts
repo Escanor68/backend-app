@@ -2,8 +2,11 @@ import { MercadoPagoConfig, Payment, PaymentMethod } from 'mercadopago';
 import { MercadoPagoClientInterface } from '../interfaces/MercadoPago.client.interface';
 import { axiosMercadoPagoApi } from '../setting/axios';
 import dotenv from 'dotenv';
-import { PaymentDataInterface } from '../interfaces/PaymentData.interface';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+import {
+    PaymentCreateData,
+    PaymentCreateRequest,
+} from 'mercadopago/dist/clients/payment/create/types';
 
 dotenv.config();
 
@@ -19,7 +22,6 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
         // Configuración del cliente de Mercado Pago
         this.client = new MercadoPagoConfig({
             accessToken: token,
-            options: { timeout: 5000, idempotencyKey: 'abc' },
         });
     }
 
@@ -29,16 +31,14 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
      * @returns La respuesta de la API de Mercado Pago
      */
     async createOrder(
-        paymentData: PaymentDataInterface,
+        paymentData: PaymentCreateRequest,
     ): Promise<PaymentResponse> {
         try {
             // Inicializa el objeto Payment
             const payment = new Payment(this.client);
 
             // Crea la preferencia de pago
-            return await payment.create({
-                body: paymentData,
-            });
+            return await payment.create({ body: paymentData });
         } catch (error) {
             console.error('Failed to create payment order:', error);
             throw new Error('Failed to create payment order: ' + error);

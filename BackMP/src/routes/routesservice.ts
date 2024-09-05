@@ -4,7 +4,7 @@ const router = Router({ mergeParams: true });
 
 router.post(
     `/api/v1/mercadoPago/payment/created`,
-    mercadoPagoController.createPayment,
+    mercadoPagoController.createOrder,
 );
 
 router.post(

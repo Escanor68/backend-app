@@ -2,7 +2,7 @@ import { MercadoPagoClientInterface } from '../../infrastructure/interfaces/Merc
 import { MercadoPagoServiceInterface } from '../interfaces/MercadoPago.service.interface';
 import { ApiFutbolClientInterface } from '../../infrastructure/interfaces/ApiFutbol.client.interface';
 import dotenv from 'dotenv';
-import { PaymentDataInterface } from '../../infrastructure/interfaces/PaymentData.interface';
+import { PaymentCreateData } from '../../infrastructure/interfaces/PaymentDataCard.interface';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import { PaymentMethod } from 'mercadopago';
 
@@ -43,8 +43,8 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
      * @param paymentData - Los datos necesarios para crear el pago.
      * @returns La respuesta de la creación del pago.
      */
-    async createPayment(
-        paymentData: PaymentDataInterface,
+    async createOrder(
+        paymentData: PaymentCreateData,
     ): Promise<PaymentResponse> {
         try {
             return await this.mercadoPagoClient.createOrder(paymentData);
@@ -57,7 +57,7 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
      * Actualiza un registro en la base de datos y envía la información actualizada.
      * @param updatedData - Los datos que se han actualizado.
      */
-    async updateRecordAndSendInfo(updatedData: any): Promise<void> {
+    private async updateRecordAndSendInfo(updatedData: any): Promise<void> {
         try {
             // Aquí iría la lógica para actualizar la base de datos
             console.log('Updating record with data:', updatedData);
