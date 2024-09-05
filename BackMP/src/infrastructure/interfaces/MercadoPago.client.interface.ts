@@ -1,8 +1,8 @@
 import { PaymentMethod } from 'mercadopago';
-import { PaymentCreateData } from './PaymentDataCard.interface';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+import { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/types';
 
 export interface MercadoPagoClientInterface {
-    createOrder(paymentData: PaymentCreateData): Promise<PaymentResponse>;
+    createOrder(paymentData: PaymentCreateRequest): Promise<PaymentResponse>;
     getPaymentMethod(): Promise<PaymentMethod>;
 }
