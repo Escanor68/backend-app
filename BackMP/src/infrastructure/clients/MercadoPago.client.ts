@@ -3,10 +3,7 @@ import { MercadoPagoClientInterface } from '../interfaces/MercadoPago.client.int
 import { axiosMercadoPagoApi } from '../setting/axios';
 import dotenv from 'dotenv';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
-import {
-    PaymentCreateData,
-    PaymentCreateRequest,
-} from 'mercadopago/dist/clients/payment/create/types';
+import { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/types';
 
 dotenv.config();
 

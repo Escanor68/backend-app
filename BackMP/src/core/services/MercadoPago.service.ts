@@ -2,9 +2,9 @@ import { MercadoPagoClientInterface } from '../../infrastructure/interfaces/Merc
 import { MercadoPagoServiceInterface } from '../interfaces/MercadoPago.service.interface';
 import { ApiFutbolClientInterface } from '../../infrastructure/interfaces/ApiFutbol.client.interface';
 import dotenv from 'dotenv';
-import { PaymentCreateData } from '../../infrastructure/interfaces/PaymentDataCard.interface';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import { PaymentMethod } from 'mercadopago';
+import { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/types';
 
 dotenv.config();
 
@@ -44,7 +44,7 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
      * @returns La respuesta de la creación del pago.
      */
     async createOrder(
-        paymentData: PaymentCreateData,
+        paymentData: PaymentCreateRequest,
     ): Promise<PaymentResponse> {
         try {
             return await this.mercadoPagoClient.createOrder(paymentData);
