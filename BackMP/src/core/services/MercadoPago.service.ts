@@ -2,6 +2,9 @@ import { MercadoPagoClientInterface } from '../../infrastructure/interfaces/Merc
 import { MercadoPagoServiceInterface } from '../interfaces/MercadoPago.service.interface';
 import { ApiFutbolClientInterface } from '../../infrastructure/interfaces/ApiFutbol.client.interface';
 import dotenv from 'dotenv';
+import { PaymentDataInterface } from '../../infrastructure/interfaces/PaymentData.interface';
+import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+import { PaymentMethod } from 'mercadopago';
 
 dotenv.config();
 
@@ -40,7 +43,9 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
      * @param paymentData - Los datos necesarios para crear el pago.
      * @returns La respuesta de la creación del pago.
      */
-    async createPayment(paymentData: any): Promise<any> {
+    async createPayment(
+        paymentData: PaymentDataInterface,
+    ): Promise<PaymentResponse> {
         try {
             return await this.mercadoPagoClient.createOrder(paymentData);
         } catch (error) {
@@ -69,7 +74,7 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
      * @returns An array of objects representing the payment methods.
      * @throws {Error} If there is a failure to retrieve the payment methods.
      */
-    async getPaymentMethod(): Promise<Array<object>> {
+    async getPaymentMethod(): Promise<PaymentMethod> {
         try {
             return await this.mercadoPagoClient.getPaymentMethod();
         } catch (error) {

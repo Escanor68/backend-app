@@ -1,7 +1,9 @@
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { MercadoPagoConfig, Payment, PaymentMethod } from 'mercadopago';
 import { MercadoPagoClientInterface } from '../interfaces/MercadoPago.client.interface';
 import { axiosMercadoPagoApi } from '../setting/axios';
 import dotenv from 'dotenv';
+import { PaymentDataInterface } from '../interfaces/PaymentData.interface';
+import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 
 dotenv.config();
 
@@ -17,6 +19,7 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
         // Configuración del cliente de Mercado Pago
         this.client = new MercadoPagoConfig({
             accessToken: token,
+            options: { timeout: 5000, idempotencyKey: 'abc' },
         });
     }
 
@@ -25,35 +28,20 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
      * @param paymentData - Los datos necesarios para crear la preferencia de pago
      * @returns La respuesta de la API de Mercado Pago
      */
-    async createOrder(paymentData: any): Promise<any> {
+    async createOrder(
+        paymentData: PaymentDataInterface,
+    ): Promise<PaymentResponse> {
         try {
             // Inicializa el objeto Payment
             const payment = new Payment(this.client);
 
             // Crea la preferencia de pago
-            return await payment.create({ body: paymentData });
+            return await payment.create({
+                body: paymentData,
+            });
         } catch (error) {
+            console.error('Failed to create payment order:', error);
             throw new Error('Failed to create payment order: ' + error);
-        }
-    }
-
-    /**
-     * Recibe un webhook de Mercado Pago y procesa el evento
-     * @param payment - Los datos del webhook recibidos
-     * @returns Los datos de la transacción si el tipo de webhook es "payment"
-     */
-    async receiveWebhook(payment: any): Promise<any> {
-        try {
-            if (payment.type === 'payment') {
-                const paymentInstance = new Payment(this.client);
-                const data = await paymentInstance.get({
-                    id: payment['data.id'],
-                });
-                return data;
-            }
-            return null;
-        } catch (error) {
-            throw new Error('Failed to process webhook: ' + error);
         }
     }
 
@@ -61,7 +49,7 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
      * Obtiene los métodos de pago disponibles en Mercado Pago.
      * @returns Una promesa que se resuelve con una lista de métodos de pago.
      */
-    async getPaymentMethod(): Promise<Array<object>> {
+    async getPaymentMethod(): Promise<PaymentMethod> {
         try {
             const response = await axiosMercadoPagoApi.get(
                 '/v1/payment_methods',
