@@ -1,9 +1,9 @@
 import { MercadoPagoConfig, Payment, PaymentMethod } from 'mercadopago';
 import { MercadoPagoClientInterface } from '../interfaces/MercadoPago.client.interface';
 import { axiosMercadoPagoApi } from '../setting/axios';
-import dotenv from 'dotenv';
 import { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/types';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -35,10 +35,19 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
             const payment = new Payment(this.client);
 
             // Crea la preferencia de pago
-            return await payment.create({ body: paymentData });
-        } catch (error) {
-            console.error('Failed to create payment order:', error);
-            throw new Error('Failed to create payment order: ' + error);
+            const response = await payment.create({ body: paymentData });
+
+            // Manejo adicional de la respuesta si es necesario
+            return response;
+        } catch (error: any) {
+            console.error(
+                'Failed to create payment order:',
+                error.response?.data || error.message,
+            );
+            throw new Error(
+                'Failed to create payment order: ' +
+                    (error.response?.data || error.message),
+            );
         }
     }
 
@@ -46,14 +55,21 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
      * Obtiene los métodos de pago disponibles en Mercado Pago.
      * @returns Una promesa que se resuelve con una lista de métodos de pago.
      */
-    async getPaymentMethod(): Promise<PaymentMethod> {
+    async getPaymentMethod(): Promise<PaymentMethod[]> {
         try {
             const response = await axiosMercadoPagoApi.get(
                 '/v1/payment_methods',
             );
             return response.data;
-        } catch (error) {
-            throw new Error('Failed to get payment methods: ' + error);
+        } catch (error: any) {
+            console.error(
+                'Failed to get payment methods:',
+                error.response?.data || error.message,
+            );
+            throw new Error(
+                'Failed to get payment methods: ' +
+                    (error.response?.data || error.message),
+            );
         }
     }
 }

@@ -9,5 +9,5 @@ interface WebhookEvent {
 export interface MercadoPagoServiceInterface {
     createOrder(paymentData: PaymentCreateRequest): Promise<PaymentResponse>;
     webhookReceive(webhookEvent: WebhookEvent): Promise<void>;
-    getPaymentMethod(): Promise<PaymentMethod>;
+    getPaymentMethod(): Promise<PaymentMethod[]>;
 }

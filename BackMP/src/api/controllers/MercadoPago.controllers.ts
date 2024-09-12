@@ -16,10 +16,11 @@ export class MercadoPagoController implements MercadoPagoControllerInterface {
                 status: 200,
                 message: 'Webhook processed successfully',
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Error processing webhook:', error);
             res.status(500).send({
                 status: 500,
-                message: error || 'Internal server error',
+                message: error?.message || 'Internal server error',
             });
         }
     }
@@ -31,9 +32,16 @@ export class MercadoPagoController implements MercadoPagoControllerInterface {
      */
     async createOrder(req: Request, res: Response): Promise<void> {
         try {
-            const validateBody = await validatePaymentCreateRequest(req.body);
-            if (validateBody.error) {
-                res.status(400).send(validateBody);
+            const validationResult = await validatePaymentCreateRequest(
+                req.body,
+            );
+            if (validationResult.error) {
+                console.warn('Validation failed:', validationResult.error);
+                res.status(400).send({
+                    status: 400,
+                    message: 'Invalid payment data',
+                    details: validationResult.error,
+                });
                 return;
             }
 
@@ -41,29 +49,35 @@ export class MercadoPagoController implements MercadoPagoControllerInterface {
                 req.body,
             );
             res.status(200).send({
+                status: 200,
                 response: paymentResponse,
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Error creating payment order:', error);
             res.status(500).send({
-                message: error || 'Internal server error',
+                status: 500,
+                message: error?.message || 'Internal server error',
             });
         }
     }
 
     /**
-     * Busca las formas de pago pago utilizando el servicio de Mercado Pago.
+     * Obtiene los métodos de pago disponibles en Mercado Pago.
      * @param req - La solicitud HTTP.
      * @param res - La respuesta HTTP.
      */
     async getPaymentMethod(req: Request, res: Response): Promise<void> {
         try {
-            const paymentResponse = await mercadoPagoService.getPaymentMethod();
+            const paymentMethods = await mercadoPagoService.getPaymentMethod();
             res.status(200).send({
-                response: paymentResponse,
+                status: 200,
+                response: paymentMethods,
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Error fetching payment methods:', error);
             res.status(500).send({
-                message: error || 'Internal server error',
+                status: 500,
+                message: error?.message || 'Internal server error',
             });
         }
     }

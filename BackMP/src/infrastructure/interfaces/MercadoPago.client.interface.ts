@@ -4,5 +4,5 @@ import { PaymentCreateRequest } from 'mercadopago/dist/clients/payment/create/ty
 
 export interface MercadoPagoClientInterface {
     createOrder(paymentData: PaymentCreateRequest): Promise<PaymentResponse>;
-    getPaymentMethod(): Promise<PaymentMethod>;
+    getPaymentMethod(): Promise<PaymentMethod[]>;
 }
