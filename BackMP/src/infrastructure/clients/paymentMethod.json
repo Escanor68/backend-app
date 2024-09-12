@@ -1,0 +1,678 @@
+[
+    {
+        "id": "amex",
+        "name": "American Express",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/b08cf800-4c1a-11e9-9888-a566cbf302df-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/b08cf800-4c1a-11e9-9888-a566cbf302df-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 15
+                },
+                "bin": {
+                    "pattern": "^(34|37)",
+                    "installments_pattern": "^(34|37)",
+                    "exclusion_pattern": "^(377753)"
+                },
+                "security_code": {
+                    "length": 4,
+                    "card_location": "front",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "cabal",
+        "name": "Cabal",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/c9f71470-6f07-11ec-9b23-071a218bbe35-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/c9f71470-6f07-11ec-9b23-071a218bbe35-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^((627170)|(650272)|(589657)|(603522)|(604((20[1-9])|(2[1-9][0-9])|(3[0-9]{2})|(400)))|(36[0-9][0-9][0-9][0-9][0-9][0-9])|(60110[0-9][0-9][0-9])|(6011[2-4][0-9][0-9][0-9])|(601174[0-9][0-9])|(60117[7-9][0-9][0-9])|(6011[8-9][6-9][0-9][0-9])|(6[4-5][4-9][0-9][0-9][0-9][0-9][0-9]))",
+                    "installments_pattern": "^(?!(604209|604218|604222|604228|604244|604355|604356|604358|604359|604362|604363|604365|604367|604368|604369|604370|604371|604372|604373|604374|604375|604376|604379|604380|604381|604382|604385|604386|604388|604389|604391))",
+                    "exclusion_pattern": "^(604201|604225|604246|604357|604260|604377)"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "sol",
+        "name": "Sol",
+        "payment_type_id": "credit_card",
+        "status": "testing",
+        "secure_thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/master.gif",
+        "thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/master.gif",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(504639)",
+                    "installments_pattern": "^(504639)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name",
+            "issuer_id"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 5000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "debcabal",
+        "name": "Cabal Débito",
+        "payment_type_id": "debit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/c9f71470-6f07-11ec-9b23-071a218bbe35-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/c9f71470-6f07-11ec-9b23-071a218bbe35-xl@2x.png",
+        "deferred_capture": "unsupported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(604201|650087|65008700)",
+                    "installments_pattern": "^(604201)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 1440,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "debvisa",
+        "name": "Visa Débito",
+        "payment_type_id": "debit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d589be70-eb86-11e9-b9a8-097ac027487d-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d589be70-eb86-11e9-b9a8-097ac027487d-xl@2x.png",
+        "deferred_capture": "unsupported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(400276|400440|400448|400615|400930|402164|402789|402914|404625|404854|405069|405511|405515|405516|405517|405531|405755|405896|405897|406165|406190|406191|406192|406193|406194|406195|406196|406290|406291|406375|406651|406652|406663|406998|406999|408134|408515|410016|410082|410083|410121|410122|410853|411197|411199|411849|412944|413180|416679|417309|417856|417857|420884|421518|421738|423001|423018|423077|423090|423465|423613|423623|427156|427157|428062|428063|428064|429751|429752|431070|431071|434531|434532|434533|434534|434535|434536|434537|434538|434539|434540|434541|434542|434543|434549|434550|434586|434795|437996|437999|438844|439818|442371|442372|442548|443264|444047|444060|444267|444493|446343|446344|446345|446346|446347|448712|450412|450799|450912|451253|451377|451696|451701|451751|451756|451757|451758|451761|451763|451765|451766|451767|451768|451769|451770|451772|451773|452133|452996|452997|453770|455103|455890|456936|457308|457596|457664|457665|458918|459300|459654|462815|462958|463465|464855|465255|466904|468508|469874|473227|473365|473710|473711|473712|473713|473714|473715|473716|473718|473719|473720|473721|473722|473725|476520|476940|477051|477053|477363|478018|478468|478601|479587|480461|480860|480869|481397|481501|481502|481550|483002|483020|483049|483188|486547|486587|486621|486662|486665|487221|488241|489412|489634|490889|491363|491681|492115|492498|492528|492596|492598|493764|499859|41527795|45091200|45171342|45171343|45171379|45171502|45171648|45171649|45171657|45171688|45171698|45171700|45171701|45171702|45171705|45171706|45171707|45171709|45171712|45171713|45171714|45171715|45171717|45171718|45171843|45172310|45199600|45199700|45478121|45478900|45478901|45478902|45479305|45479315|45479316|45479319|46366259|46374042|46740079|47452318|47452319|47452320|47452322|47461145|47461146|47461149|47461153|47617300|47617390|47617399|47837429|49190211|49190213|49841057|451764)",
+                    "installments_pattern": "",
+                    "exclusion_pattern": "^(491580|43453550|45891801)"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "cmr",
+        "name": "CMR",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/26fbb110-571c-11e8-95d8-631c1a9a92a9-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/26fbb110-571c-11e8-95d8-631c1a9a92a9-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(557039)",
+                    "installments_pattern": "^(557039)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "visa",
+        "name": "Visa",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d589be70-eb86-11e9-b9a8-097ac027487d-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d589be70-eb86-11e9-b9a8-097ac027487d-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(4|4330600000|409230|40806500|42783600|43306000|44338202|44611600|45462200|47801300|48508900|48941800|49259700|49603900)",
+                    "installments_pattern": "^(?!(409230|410352|427835|427836|441046|447556|469283|474531|477163|477169|478017|492499|496039|496055|42783600))",
+                    "exclusion_pattern": "^(456936|493764|492115|406663|480460|480459|478601|487221|486665|486547|469874|457664|457308|455890|452133|452132|450799|437999|400930|483049|480860|480857|480852|480461|478018|492598|492596|487053|486662|486587|472090|466904|458918|452997|452996|451696|451253|417857|417856|410016|404854|400440|480869|490889|454970|420884|476520|473713|473227|444493|410122|405517|402789|448712|453770|434541|411199|423465|434540|434542|434538|423018|488241|489634|434537|434539|434536|427156|427157|434535|434534|434533|423077|434532|434586|423001|434531|411197|443264|400276|400615|402914|404625|405069|434543|416679|405515|405516|405755|405896|405897|406290|406291|406375|406652|406998|406999|408515|410082|410083|410121|410123|410853|411849|417309|421738|423623|428062|428063|428064|434795|437996|439818|442371|442548|444060|446343|446344|446347|450412|451377|451701|451751|451756|451757|451758|451761|451763|451764|451765|451766|451767|451768|451769|451770|451772|451773|457596|457665|462815|463465|468508|473710|473711|473712|473714|473715|473716|473717|473718|473719|473720|473721|473722|473725|477051|477053|481397|481501|481502|481550|483002|483020|483188|489412|492528|499859|446345|446346|400448|406651|442372|476940|491681|486621|473365|464855|459300|444267|444047|438844|434550|434549|431071|431070|429752|429751|423613|423090|421528|421518|413180|412944|408134|406196|406195|406194|406193|406192|472042|411763|411764|411765|486568|416861|472041|459654|438051|406191|406190|406165|405511|402164|405531|450912|478468|478792|456307|451786|455103|401669|417643|419384|422873|423426|430820|430877|431759|446237|450753|463740|474524|476410|478016|479858|486752|490169|405325|406647|404471|405367|409705|414427|415611|415721|415834|418604|415718|415858|419019|420181|420569|423757|423868|423606|424616|425254|426552|427414|427465|427624|427634|427671|428782|427979|428792|430069|430077|430220|430829|430859|430892|431215|431819|432018|432368|432398|432600|432636|432643|432860|432910|433129|438627|448479|450411|454793|454958|456722|475529|476745|476895|477309|477315|477333|477342|477362|477784|478228|478321|478374|478396|479064|479434|481104|481408|481605|484011|484012|486533|486573|486596|486608|486614|486672|486869|489908|490160|490788|490948|491356|491902|493852|406172|418801|432017|433471|448762|452405|462755|462957|463660|478331|478402|485367|485938|486423|486634|486859|491085|491361|499816|408340|491020|491088|431764|433898|474523|482020|410451|415475|420863|483152|485955|448551|450785|451711|451715|485648|405010|486577|450784|442186|448516|489769|481761|405644|456962|486549|433846|424964|486421|486649|423468|491682|475809|467080|476538|489418|478458|478406|478403|478202|492498|462958|491363|479587|49190213|49190211|47837429|47461153|47461149|47461146|47461145|47452322|47452320|47452319|47452318|46740079|46374042|45478902|45478901|45478900|45478121|45171998|45171843|45171718|45171717|45171715|45171714|45171713|45171712|45171709|45171707|45171706|45171705|45171702|45171701|45171700|45171698|45171688|45171657|45171649|45171648|45171502|45171379|45171343|45171342|41527795|45199600|45199700|48967962|47987049|49076452|49841047|45171792|45171777|47987073|47461233|45171797|45171796|45171776|46295808|45171785|49841056|41949502|43050775|49841070|47987021|41564599|47793818|47987068|41447078|47987054|45171790|41612621|47987012|46740094|45171740|48411264|45171992|47793808|47912308|47987015|48411254|47552282|49076417|48411271|48967961|45172347|49841060|41728875|49841059|45172350|49076424|42209533|42550008|49076491|45171438|45171991|48260004|46740095|46740087|43086190|45172327|47987069|47987058|49076423|47987066|43286567|48411250|47987055|49841055|49076416|45171783|45171380|49076492|48967941|46740093|48967963|46740089|42550006|45171788|48411268|45171795|48411294|47840694|42463795|47552286|47987081|48411240|48420400|46295809|42968174|41486501|45171432|48967960|49841041|48972487|45172331|45172301|47552280|48972493|49841081|49076494|48420402|48411243|47987078|49841043|47987065|48411265|49841057|49076414|48411249|48411267|45171401|48967965|47552284|47987080|41728876|45478909|48411297|47987079|45171410|49076495|48411238|49841045|45171346|45478910|45478932|47987020|45171326|45171775|48411256|45172333|45172349|47987024|48967971|40501594|48411241|47987042|48972490|47987059|47987016|48260007|48411292|41612622|48411248|47699695|47987019|41728877|47987052|49076488|45172328|49130085|48967958|45171403|45171647|47552283|49841075|45171325|45478930|47987011|49076489|49841062|47987025|45171771|45171394|49841054|45172300|42463794|48967966|49601342|42710614|48411266|41612678|47987044|42209576|49841051|48411272|48411269|48260006|49841080|49122313|47987022|48967967|46740098|48653004|43080893|46295807|49841085|47987023|48420423|41612619|49841052|47987056|47699691|47987043|48411252|42944500|49076422|41612628|49841074|43261958|45172334|49841073|45172336|48420425|45171789|47912307|41728874|45171427|49076421|46740090|42298793|45171799|49841086|46740097|48967969|40501593|49841082|45171395|49076420|49076413|43050774|48411263|48411253|45171327|48411244|49076498|49841079|47987009|49841042|47987067|49841044|45171794|42209536|45171798|42968173|49841072|43286090|48401232|48564835|48686907|49016050|49016055|49108504|47840231|47906413|41860472|42209535|48972491|47552285|48967942|41612626|47987013|45495843|48411242|47295528|41612625|47906430|41612624|42879286|48564849|46366049|43201765|47840229|49190217|47840240|49108525|49108517|45495899|47840235|41612623|43312925|49841053|42879285|46295707|49108510|42968175|47906414|41612680|49108522|47452350|45171423|47452348|45171779|45171608|48972492|49016049|49108523|42209532|48411262|42525498|48411251|48411270|49076451|47840228|49190208|48972489|47840248|42550007|49076450|45171791|42209531|40595128|41447077|45171165|46740091|47906460|48411255|47906435|48140820|49016032|49108526|45171174|48686905|43088781|49841061|48411299|49076499|47906451|45171851|47906489|49016048|49108532|48411293|43201806|48564830|48564816|47906443|48411298|46740099|45171806|45171588|41486504|48420421|49841083|41612679|47840223|47452351|40536707|48401147|48967973|45171396|42767152|47839621|42879201|48967970|45172332|47906490|47912306|43085910|47906485|48564815|47987010|41612620|48420426|47987018|48411295|47699697|45171500|47987050|49016039|48401234|49601344|49108515|47689594|46366070|45478933|49108528|42209530|49841069|47906437|49841050|47452342|49016031|41728878|47552287|48411247|47552288|47452343|43263616|49016034|47840239|49190209|48967972|48260005|45171807|49108506|49076425|47689581|48967959|47906478|48420422|45171822|42879287|45171167|45171808|48420401|43007753|40532546|49076426|49016924|47552281|45172303|45171439|45171176|47617300|40595129|47371750|47371702|47371701|47371700|40117205|42130200|43554408|44275502|47577480|48593207|49157625)"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "diners",
+        "name": "Diners",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/751ea930-571a-11e8-9a2d-4b2bd7b1bf77-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/751ea930-571a-11e8-9a2d-4b2bd7b1bf77-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 14
+                },
+                "bin": {
+                    "pattern": "^((30)|(36)|(38))",
+                    "installments_pattern": "^((360935)|(360936))",
+                    "exclusion_pattern": "^((3646)|(3648))"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "naranja",
+        "name": "Naranja",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/af139ad0-d705-11ee-8925-8314c09d1640-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/af139ad0-d705-11ee-8925-8314c09d1640-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(527571|589562)",
+                    "installments_pattern": "^(527571|589562)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "optional"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "tarshop",
+        "name": "Tarjeta Shopping",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/33ea00e0-571a-11e8-8364-bff51f08d440-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/33ea00e0-571a-11e8-8364-bff51f08d440-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 13
+                },
+                "bin": {
+                    "pattern": "^(27995)",
+                    "installments_pattern": "^(27995)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 0,
+                    "card_location": "back",
+                    "mode": "optional"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "debin_transfer",
+        "name": "DEBIN",
+        "payment_type_id": "bank_transfer",
+        "status": "testing",
+        "secure_thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/2005.gif",
+        "thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/2005.gif",
+        "deferred_capture": "does_not_apply",
+        "settings": [],
+        "additional_info_needed": [],
+        "min_allowed_amount": 1,
+        "max_allowed_amount": 3000000,
+        "accreditation_time": 0,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "debmaster",
+        "name": "Mastercard Débito",
+        "payment_type_id": "debit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/0daa1670-5c81-11ec-ae75-df2bef173be2-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/0daa1670-5c81-11ec-ae75-df2bef173be2-xl@2x.png",
+        "deferred_capture": "unsupported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(222980|230688|230867|232004|233049|250058|501104|501107|505863|505864|505865|511080|511309|511673|511849|511913|514256|514285|514365|514586|514758|514908|515845|517562|518176|518787|522128|524313|525559|526461|526497|527341|527558|528733|528745|530779|531141|531179|531441|532309|533423|533860|533871|533888|535456|535584|535585|536196|536560|536670|536671|538172|539110|541409|542405|542878|544069|544768|546308|546367|547526|548913|549180|551200|551314|551792|553474|553525|553771|553777|553839|554763|555889|555902|557069|557575|557648|557917|558418|558495|559100|559109|559442|559926|23304901|54133300|54752600|67903180)",
+                    "installments_pattern": "",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name",
+            "issuer_id"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 1440,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "maestro",
+        "name": "Maestro",
+        "payment_type_id": "debit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/ce454480-445f-11eb-bf78-3b1ee7bf744c-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/ce454480-445f-11eb-bf78-3b1ee7bf744c-xl@2x.png",
+        "deferred_capture": "unsupported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 18
+                },
+                "bin": {
+                    "pattern": "^(357200|501016|501018|501021|501023|501026|501028|501038|501041|501043|501047|501051|501053|501055|501056|501057|501059|501060|501062|501063|501066|501075|504656|504962|557909|560718|588729|35720001|50106399)",
+                    "installments_pattern": "",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            },
+            {
+                "card_number": {
+                    "validation": "none",
+                    "length": 19
+                },
+                "bin": {
+                    "pattern": "^(501068|501080|501081|508143|601782|501082)",
+                    "installments_pattern": "",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 1440,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "cencosud",
+        "name": "Cencosud",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/e8ffdc40-5dc7-11ec-ae75-df2bef173be2-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/e8ffdc40-5dc7-11ec-ae75-df2bef173be2-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(603493)",
+                    "installments_pattern": "^(603493)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "sucredito",
+        "name": "Sucredito",
+        "payment_type_id": "credit_card",
+        "status": "testing",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/98726500-17c6-11ec-b1f4-3519186a079a-m.svg",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/98726500-17c6-11ec-b1f4-3519186a079a-m.svg",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(621978)",
+                    "installments_pattern": "^(621978)",
+                    "exclusion_pattern": null
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name",
+            "issuer_id"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "master",
+        "name": "Mastercard",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/0daa1670-5c81-11ec-ae75-df2bef173be2-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/0daa1670-5c81-11ec-ae75-df2bef173be2-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(5|(2(221|222|223|224|225|226|227|228|229|23|24|25|26|27|28|29|3|4|5|6|70|71|720))|52142252|52143745|55027557|53278448|55890512|22345147|54133300|54594100|51030714|55791003)",
+                    "installments_pattern": "^(?!(223364)|(230709)|(511658)|(515771)|(516656)|(519879)|(521246)|(522428)|(525562)|(528104)|(528824)|(531929)|(531984)|(533305)|(539481)|(539508)|(540573)|(554630)|(555848)|(559137))",
+                    "exclusion_pattern": "^(555889|504639|504570|542878|532383|515070|515073|560718|551314|526497|524313|559926|559109|559100|557917|551200|541409|539110|536671|536670|536560|533888|533871|533860|533423|531179|531141|530779|522128|518787|515845|505865|505864|505863|232004|557069|555902|536196|532309|531441|530815|522684|501108|501107|501104|230867|230688|593628|592501|593626|514256|514586|526461|511309|514285|501059|557909|589633|553839|553777|553771|551792|528733|549180|528745|517562|511849|557648|546367|501070|508143|501085|501074|501073|501071|501068|501066|589671|588729|501089|501083|501082|501081|501080|501075|501067|501062|501061|501060|501058|501057|501056|501055|501054|501053|501051|501049|501047|501045|501043|501041|501040|501039|501038|501029|501028|501027|501026|501025|501024|501023|501021|501020|501018|501016|501015|589657|589562|501105|557039|562397|566694|566783|568382|569322|504363|504338|504777|511673|514365|534935|222980|504520|544069|527558|511657|535456|535584|535585|250058|547526|514758|511080|514908|525559|542405|553474|553525|554763|557575|558418|558495|559442|527571|544768|504656|501063|504780|527341|511913|588800|546308|518176|504962|504408|233049|531758|22345147|54133300|52142252|55027557|52143745|54594100|51030714|55791003|53278448|55890512)"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name",
+            "issuer_id"
+        ],
+        "min_allowed_amount": 3,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "argencard",
+        "name": "Argencard",
+        "payment_type_id": "credit_card",
+        "status": "active",
+        "secure_thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d7e55980-f3be-11eb-8e0d-6f4af49bf82e-xl@2x.png",
+        "thumbnail": "https://http2.mlstatic.com/storage/logos-api-admin/d7e55980-f3be-11eb-8e0d-6f4af49bf82e-xl@2x.png",
+        "deferred_capture": "supported",
+        "settings": [
+            {
+                "card_number": {
+                    "validation": "standard",
+                    "length": 16
+                },
+                "bin": {
+                    "pattern": "^(501105)",
+                    "installments_pattern": "^(501105)",
+                    "exclusion_pattern": "^((589562)|(527571)|(527572))"
+                },
+                "security_code": {
+                    "length": 3,
+                    "card_location": "back",
+                    "mode": "mandatory"
+                }
+            }
+        ],
+        "additional_info_needed": [
+            "cardholder_identification_number",
+            "cardholder_identification_type",
+            "cardholder_name"
+        ],
+        "min_allowed_amount": 15,
+        "max_allowed_amount": 15000000,
+        "accreditation_time": 2880,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "pagofacil",
+        "name": "Pago Fácil",
+        "payment_type_id": "ticket",
+        "status": "active",
+        "secure_thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/pagofacil.gif",
+        "thumbnail": "http://img.mlstatic.com/org-img/MP3/API/logos/pagofacil.gif",
+        "deferred_capture": "does_not_apply",
+        "settings": [],
+        "additional_info_needed": [],
+        "min_allowed_amount": 50,
+        "max_allowed_amount": 1000000,
+        "accreditation_time": 0,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "rapipago",
+        "name": "Rapipago",
+        "payment_type_id": "ticket",
+        "status": "active",
+        "secure_thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/rapipago.gif",
+        "thumbnail": "http://img.mlstatic.com/org-img/MP3/API/logos/rapipago.gif",
+        "deferred_capture": "does_not_apply",
+        "settings": [],
+        "additional_info_needed": [],
+        "min_allowed_amount": 50,
+        "max_allowed_amount": 1000000,
+        "accreditation_time": 0,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    },
+    {
+        "id": "cobroexpress",
+        "name": "Cobro Express",
+        "payment_type_id": "ticket",
+        "status": "testing",
+        "secure_thumbnail": "https://www.mercadopago.com/org-img/MP3/API/logos/cobroexpress.gif",
+        "thumbnail": "http://img.mlstatic.com/org-img/MP3/API/logos/cobroexpress.gif",
+        "deferred_capture": "does_not_apply",
+        "settings": [],
+        "additional_info_needed": [],
+        "min_allowed_amount": 50,
+        "max_allowed_amount": 200000,
+        "accreditation_time": 0,
+        "financial_institutions": [],
+        "processing_modes": ["aggregator"]
+    }
+]
