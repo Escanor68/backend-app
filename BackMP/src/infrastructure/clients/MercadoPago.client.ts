@@ -12,14 +12,19 @@ export class MercadoPagoClient implements MercadoPagoClientInterface {
 
     constructor() {
         const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-        if (!token) {
-            throw new Error('Mercado Pago access token is missing');
-        }
 
-        // Configuración del cliente de Mercado Pago
-        this.client = new MercadoPagoConfig({
-            accessToken: token,
-        });
+        if (!token) {
+            console.warn(
+                'Mercado Pago access token is missing. Using default placeholder token.',
+            );
+            this.client = new MercadoPagoConfig({
+                accessToken: 'your-default-placeholder-token',
+            });
+        } else {
+            this.client = new MercadoPagoConfig({
+                accessToken: token,
+            });
+        }
     }
 
     /**

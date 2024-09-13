@@ -56,6 +56,9 @@ export class MercadoPagoService implements MercadoPagoServiceInterface {
             const paymentResponse =
                 await this.mercadoPagoClient.createOrder(paymentData);
             console.log('Payment created successfully:', paymentResponse);
+            if (paymentResponse.status == 'approved') {
+                this.updateRecordAndSendInfo(paymentResponse);
+            }
             return paymentResponse;
         } catch (error) {
             console.error('Failed to create payment:', error);
