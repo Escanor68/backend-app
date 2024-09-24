@@ -3,7 +3,6 @@ import { initializeConnection } from '../utils/decorators';
 import { Transactional } from 'typeorm-transactional';
 import { ResetPasswordRepositoryInterface } from '../interfaces/ResetPassword.repository.interface';
 import { ResetPasswordEntity } from '../../core/entities/ResetPassword.entity';
-import moment from 'moment';
 
 export class ResetPasswordRepository
     implements ResetPasswordRepositoryInterface
