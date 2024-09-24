@@ -45,6 +45,17 @@ export class FutbolService implements FutbolServiceInterface {
         }
     }
 
+    async traerCanchas(userField: number): Promise<SoccerFieldEntities[]> {
+        try {
+            return await this.futbolRepository.getDataUserField(userField);
+        } catch (error: any) {
+            // Asegurarte de que el error muestra el nombre de la cancha correcto
+            throw new Error(
+                `Error al traer los turnos para el usuario '${userField}': ${error?.message}`,
+            );
+        }
+    }
+
     /**
      * Genera los turnos de 1:30 horas dentro del rango de disponibilidad, permitiendo que el último turno se exceda por un máximo de 30 minutos.
      * @param owner - El ID del dueño de la cancha.

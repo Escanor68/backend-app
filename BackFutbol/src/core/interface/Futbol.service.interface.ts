@@ -8,4 +8,6 @@ export interface FutbolServiceInterface {
         availableUntil: string,
         price: number,
     ): Promise<void>;
+
+    traerCanchas(userField: number): Promise<SoccerFieldEntities[]>;
 }

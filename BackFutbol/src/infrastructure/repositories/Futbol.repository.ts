@@ -24,4 +24,22 @@ export class FutbolRepository implements FutbolRepositoryInterface {
             );
         }
     }
+
+    @initializeConnection()
+    async getDataUserField(userField: number): Promise<SoccerFieldEntities[]> {
+        try {
+            // Buscar todas las canchas donde el campo 'owner' coincida con el userField dado
+            const fields = await this.futbolRepository.find({
+                where: {
+                    owner: userField,
+                },
+            });
+
+            return fields || [];
+        } catch (error: any) {
+            throw new Error(
+                'Error al traer los datos del Dueño: ' + error?.message,
+            );
+        }
+    }
 }
