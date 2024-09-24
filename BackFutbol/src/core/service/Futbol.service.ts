@@ -45,11 +45,18 @@ export class FutbolService implements FutbolServiceInterface {
         }
     }
 
+    /**
+     * Trae las canchas asociadas al ID del usuario propietario de las mismas.
+     * @param userField - El ID del dueño de las canchas (usuario propietario).
+     * @returns Una promesa que resuelve con un array de objetos SoccerFieldEntities que representan las canchas del usuario.
+     * @throws Lanza un error si ocurre algún problema al obtener las canchas del repositorio.
+     */
     async traerCanchas(userField: number): Promise<SoccerFieldEntities[]> {
         try {
+            // Obtiene las canchas relacionadas con el userField a través del método getDataUserField
             return await this.futbolRepository.getDataUserField(userField);
         } catch (error: any) {
-            // Asegurarte de que el error muestra el nombre de la cancha correcto
+            // Manejo de errores personalizado que incluye el ID del usuario propietario
             throw new Error(
                 `Error al traer los turnos para el usuario '${userField}': ${error?.message}`,
             );
