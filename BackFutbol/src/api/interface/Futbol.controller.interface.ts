@@ -7,4 +7,9 @@ export interface FutbolControllerInterface {
         res: Response,
         next: NextFunction,
     ): Promise<void>;
+    reservarCanchas(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void>;
 }

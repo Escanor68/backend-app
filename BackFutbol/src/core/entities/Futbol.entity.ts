@@ -2,24 +2,35 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('soccerField', { schema: 'dev' })
 export class SoccerFieldEntities {
-    @PrimaryGeneratedColumn('uuid') // Generación de UUID como identificador único
+    // Generación automática de la clave primaria con UUID
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    // Nombre de la cancha
     @Column({ type: 'varchar', length: 255 })
-    fieldName: string; // Nombre de la cancha
+    fieldName: string;
 
+    // Horario de la cancha (manejando como cadena, pero podrías usar un tipo TIME si se ajusta a tu lógica)
     @Column({ type: 'varchar', length: 255 })
-    schedule: string; // Horario de la cancha
+    schedule: string;
 
-    @Column()
-    owner: number; // ID de userField (referencia externa a otro microservicio)
+    // ID del dueño de la cancha (userField), referencia a otro servicio
+    @Column({ type: 'int' })
+    owner: number;
 
+    // Estado de la reserva, aceptando solo 'Active' o 'Inactive'
     @Column({ type: 'varchar', length: 8 })
-    reservation: 'Active' | 'Inactive'; // Solo acepta 'Active' o 'Inactive'
+    reservation: 'Active' | 'Inactive';
 
-    @Column({ nullable: true })
-    who_reserved: number; // ID de userPlayer (referencia externa a otro microservicio)
-
+    // ID del jugador que reservó (userPlayer), este campo es opcional
     @Column({ type: 'int', nullable: true })
-    price: number; // Precio de la cancha (opcional)
+    who_reserved_id: number | null;
+
+    // Nombre del jugador que reservó (opcional)
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    who_reserved_name: string | null;
+
+    // Precio de la cancha
+    @Column({ type: 'int', nullable: false })
+    price: number;
 }

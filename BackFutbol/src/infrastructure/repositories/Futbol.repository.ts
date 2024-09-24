@@ -42,4 +42,28 @@ export class FutbolRepository implements FutbolRepositoryInterface {
             );
         }
     }
+
+    @initializeConnection()
+    async getFieldToReserve(
+        owner: number,
+        schedule: string,
+        fieldName: string,
+    ): Promise<SoccerFieldEntities | null> {
+        try {
+            // Buscar todas la canchas donde coincida los filtros
+            const fields = await this.futbolRepository.findOne({
+                where: {
+                    owner: owner,
+                    schedule: schedule,
+                    fieldName: fieldName,
+                },
+            });
+
+            return fields || null;
+        } catch (error: any) {
+            throw new Error(
+                'Error al traer los datos del Dueño: ' + error?.message,
+            );
+        }
+    }
 }

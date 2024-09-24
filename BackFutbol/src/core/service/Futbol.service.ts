@@ -63,6 +63,42 @@ export class FutbolService implements FutbolServiceInterface {
         }
     }
 
+    async reservarCancha(
+        owner: number,
+        fieldName: string,
+        schedule: string,
+        who_reserved_id: number,
+        who_reserved_name: string,
+    ): Promise<void> {
+        try {
+            const field = await this.futbolRepository.getFieldToReserve(
+                owner,
+                schedule,
+                fieldName,
+            );
+
+            if (!field)
+                throw new Error(
+                    `No existe cancha ${fieldName} con esas especificaciones`,
+                );
+            if (field?.reservation === 'Active')
+                throw new Error(
+                    `Turno no disponible para la cancha ${fieldName}`,
+                );
+
+            field.who_reserved_id = who_reserved_id;
+            field.who_reserved_name = who_reserved_name;
+            field.reservation = 'Active';
+
+            await this.futbolRepository.insertData(field);
+        } catch (error: any) {
+            // Manejo de errores personalizado que incluye el ID del usuario propietario
+            throw new Error(
+                `Error al reservar la cancha '${fieldName} para el usuario '${who_reserved_name}': ${error?.message}`,
+            );
+        }
+    }
+
     /**
      * Genera los turnos de 1:30 horas dentro del rango de disponibilidad, permitiendo que el último turno se exceda por un máximo de 30 minutos.
      * @param owner - El ID del dueño de la cancha.

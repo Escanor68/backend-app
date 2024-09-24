@@ -10,4 +10,12 @@ export interface FutbolServiceInterface {
     ): Promise<void>;
 
     traerCanchas(userField: number): Promise<SoccerFieldEntities[]>;
+
+    reservarCancha(
+        owner: number,
+        fieldName: string,
+        schedule: string,
+        who_reserved_id: number,
+        who_reserved_name: string,
+    ): Promise<void>;
 }
