@@ -8,8 +8,8 @@ import {
 
 @Entity({ name: 'userField' })
 export class UserFieldEntity {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column({
         name: 'field_name',
