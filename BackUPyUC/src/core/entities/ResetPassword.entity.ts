@@ -7,8 +7,8 @@ import {
 
 @Entity({ name: 'restorePassword' })
 export class ResetPasswordEntity {
-    @PrimaryGeneratedColumn()
-    userId: number;
+    @PrimaryGeneratedColumn('uuid')
+    userId: string;
 
     @Column({
         name: 'token',

@@ -2,7 +2,7 @@ import { ResetPasswordEntity } from '../../core/entities/ResetPassword.entity';
 
 export interface ResetPasswordRepositoryInterface {
     storeResetToken(
-        userId: number,
+        userId: string,
         token: string,
         expiateToken: Date,
     ): Promise<ResetPasswordEntity>;

@@ -42,7 +42,22 @@ export class UserFieldController implements UserFieldControllerInterface {
                 return;
             }
 
-            await userFieldService.insertData(req.body);
+            const {
+                field_name,
+                email,
+                password,
+                phoneNumber,
+                tax_id,
+                address,
+            } = req.body;
+            await userFieldService.insertData(
+                field_name,
+                email,
+                password,
+                phoneNumber,
+                tax_id,
+                address,
+            );
 
             res.status(200).send({ response: 'Usuario creado' });
         } catch (error) {

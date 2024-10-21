@@ -4,7 +4,6 @@ import { UserFieldService } from './UserField.service';
 import { userFieldRepository } from '../../infrastructure/repositories';
 import { resetPasswordRepository } from '../../infrastructure/repositories';
 
-
 export const userPlayerService = new UserPlayerService(
     userPlayerRepository,
     resetPasswordRepository,

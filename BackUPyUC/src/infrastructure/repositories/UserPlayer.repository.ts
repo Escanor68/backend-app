@@ -3,7 +3,6 @@ import { initializeConnection } from '../utils/decorators';
 import { Transactional } from 'typeorm-transactional';
 import { UserPlayerRepositoryInterface } from '../interfaces/UserPlayer.repository.interface';
 import { UserPlayerEntity } from '../../core/entities/UserPlayer.entity';
-import moment from 'moment';
 
 export class UserPlayerRepository implements UserPlayerRepositoryInterface {
     private userPlayerRepository: Repository<UserPlayerEntity>;
@@ -13,7 +12,7 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
     }
 
     @initializeConnection()
-    async getId(id: number): Promise<UserPlayerEntity | null> {
+    async getId(id: string): Promise<UserPlayerEntity | null> {
         return (
             (await this.userPlayerRepository
                 .createQueryBuilder('userPlayer')
@@ -34,22 +33,21 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
                 .getOne();
 
             return user || null;
-        } catch (error) {
-            console.error('Error in search:', error);
+        } catch (error: any) {
+            console.error('Error in search:', error?.message);
             return null;
         }
     }
 
     @initializeConnection()
     @Transactional()
-    async insertData(data: UserPlayerEntity): Promise<UserPlayerEntity> {
+    async insertData(user: UserPlayerEntity): Promise<UserPlayerEntity> {
         try {
-            const newData = new UserPlayerEntity();
-            Object.assign(newData, data);
-
-            return this.userPlayerRepository.save(newData);
-        } catch (error) {
-            throw new Error('Error al insertar datos de usuario: ' + error);
+            return this.userPlayerRepository.save(user);
+        } catch (error: any) {
+            throw new Error(
+                'Error al insertar datos de usuario: ' + error?.message,
+            );
         }
     }
 
@@ -61,8 +59,10 @@ export class UserPlayerRepository implements UserPlayerRepositoryInterface {
             Object.assign(newData, data);
 
             return this.userPlayerRepository.save(newData);
-        } catch (error) {
-            throw new Error('Error al actualizar datos de usuario: ' + error);
+        } catch (error: any) {
+            throw new Error(
+                'Error al actualizar datos de usuario: ' + error?.message,
+            );
         }
     }
 }

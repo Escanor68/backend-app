@@ -1,7 +1,6 @@
 import { UserFieldServiceInterface } from '../interface/UserField.service.interface';
 import { UserFieldRepositoryInterface } from '../../infrastructure/interfaces/UserField.repository.interface';
 import { ResetPasswordRepositoryInterface } from '../../infrastructure/interfaces/ResetPassword.repository.interface';
-import { UserFieldObject } from '../../infrastructure/interfaces/UserField.interface';
 import { UserFieldEntity } from '../entities/UserField.entity';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
@@ -27,14 +26,24 @@ export class UserFieldService implements UserFieldServiceInterface {
         this.userFieldRepository = userFieldRepository;
         this.resetPasswordRepository = resetPasswordRepository;
     }
-    public async insertData(user: UserFieldEntity): Promise<void> {
+    public async insertData(
+        field_name: string,
+        email: string,
+        password: string,
+        phoneNumber: string,
+        tax_id: string,
+        address: string,
+    ): Promise<void> {
         try {
-            const hashedPassword = await bcrypt.hash(
-                user.password,
-                this.saltRounds,
-            );
+            const user = new UserFieldEntity();
+            const hashedPassword = await bcrypt.hash(password, this.saltRounds);
 
-            const coordenadas = await this.getCoordinates(user.address);
+            const coordenadas = await this.getCoordinates(address);
+            user.fieldName = field_name;
+            user.email = email;
+            user.address = address;
+            user.phoneNumber = phoneNumber;
+            user.tax_id = tax_id;
             user.status = 'ACTIVE';
             user.password = hashedPassword;
             user.latitude = coordenadas.lat;
@@ -47,7 +56,7 @@ export class UserFieldService implements UserFieldServiceInterface {
     }
 
     public async update(
-        id: number,
+        id: string,
         newData: Partial<UserFieldEntity>,
     ): Promise<Boolean> {
         try {
@@ -74,7 +83,7 @@ export class UserFieldService implements UserFieldServiceInterface {
     public async authenticate(
         email: string,
         password: string,
-    ): Promise<{ token: string; user: UserFieldObject } | null> {
+    ): Promise<{ token: string; user: UserFieldEntity } | null> {
         try {
             const user = await this.userFieldRepository.search(email);
             if (!user) throw new Error('User not found');
@@ -100,7 +109,7 @@ export class UserFieldService implements UserFieldServiceInterface {
         }
     }
 
-    public async inactivate(id: number): Promise<Boolean> {
+    public async inactivate(id: string): Promise<Boolean> {
         try {
             const user = await this.userFieldRepository.getId(id);
 
@@ -232,6 +241,8 @@ export class UserFieldService implements UserFieldServiceInterface {
         userLng: number,
     ): Promise<UserFieldEntity[]> {
         const allFields = await this.userFieldRepository.getAll();
+
+        if (!allFields) throw new Error('No fields found');
 
         const nearbyFields = allFields.filter((field: UserFieldEntity) => {
             const distance = this.calculateDistance(

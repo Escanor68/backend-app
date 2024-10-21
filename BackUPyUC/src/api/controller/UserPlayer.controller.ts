@@ -44,7 +44,27 @@ export class UserPlayerController implements UserPlayerControllerInterface {
                 return;
             }
 
-            await userPlayerService.insertData(req.body);
+            const {
+                firstName,
+                lastName,
+                email,
+                password,
+                birthDate,
+                gender,
+                phoneNumber,
+                dni,
+            } = req.body;
+
+            await userPlayerService.insertData(
+                firstName,
+                lastName,
+                email,
+                password,
+                birthDate,
+                gender,
+                phoneNumber,
+                dni,
+            );
 
             res.status(200).send({ response: 'Usuario creado' });
         } catch (error) {

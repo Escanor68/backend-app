@@ -25,7 +25,7 @@ export class UserFieldRepository implements UserFieldRepositoryInterface {
     }
 
     @initializeConnection()
-    async getId(id: number): Promise<UserFieldEntity | null> {
+    async getId(id: string): Promise<UserFieldEntity | null> {
         return (
             (await this.userFieldRepository
                 .createQueryBuilder('userField')
@@ -54,12 +54,7 @@ export class UserFieldRepository implements UserFieldRepositoryInterface {
     @Transactional()
     async insertData(data: UserFieldEntity): Promise<UserFieldEntity> {
         try {
-            const newData = new UserFieldEntity();
-            Object.assign(newData, data);
-
-            newData.createdAt = new Date();
-
-            return this.userFieldRepository.save(newData);
+            return this.userFieldRepository.save(data);
         } catch (error) {
             throw new Error('Error al insertar datos de usuario: ' + error);
         }

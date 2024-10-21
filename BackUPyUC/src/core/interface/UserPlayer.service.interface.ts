@@ -1,17 +1,25 @@
 import { UserPlayerEntity } from '../entities/UserPlayer.entity';
-import { UserPlayerObject } from '../../infrastructure/interfaces/UserPlayer.interface';
 
 export interface UserPlayerServiceInterface {
-    insertData(user: UserPlayerObject): Promise<void>;
+    insertData(
+        firstName: string,
+        lastName: string,
+        email: string,
+        password: string,
+        birthDate: string,
+        gender: string,
+        phoneNumber: string,
+        dni: string,
+    ): Promise<void>;
 
-    update(id: number, newData: Partial<UserPlayerEntity>): Promise<Boolean>;
+    update(id: string, newData: Partial<UserPlayerEntity>): Promise<Boolean>;
 
     authenticate(
         email: string,
         password: string,
-    ): Promise<{ token: string; user: UserPlayerObject } | null>;
+    ): Promise<{ token: string; user: UserPlayerEntity } | null>;
 
-    inactivate(id: number): Promise<Boolean>;
+    inactivate(id: string): Promise<Boolean>;
 
     sendTokenReset(email: string): Promise<Boolean>;
 

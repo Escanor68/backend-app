@@ -1,7 +1,6 @@
 import { UserPlayerServiceInterface } from '../interface/UserPlayer.service.interface';
 import { UserPlayerRepositoryInterface } from '../../infrastructure/interfaces/UserPlayer.repository.interface';
 import { ResetPasswordRepositoryInterface } from '../../infrastructure/interfaces/ResetPassword.repository.interface';
-import { UserPlayerObject } from '../../infrastructure/interfaces/UserPlayer.interface';
 import { UserPlayerEntity } from '../entities/UserPlayer.entity';
 import moment from 'moment';
 import nodemailer from 'nodemailer';
@@ -27,25 +26,50 @@ export class UserPlayerService implements UserPlayerServiceInterface {
         this.resetPasswordRepository = resetPasswordRepository;
     }
 
-    public async insertData(user: UserPlayerObject): Promise<void> {
+    public async insertData(
+        firstName: string,
+        lastName: string,
+        email: string,
+        password: string,
+        birthDate: string,
+        gender: string,
+        phoneNumber: string,
+        dni: string,
+    ): Promise<void> {
         try {
-            const hashedPassword = await bcrypt.hash(
-                user.password,
-                this.saltRounds,
-            );
+            // Verificación del género
+            const validGenders: Array<'M' | 'F' | 'Other'> = [
+                'M',
+                'F',
+                'Other',
+            ];
+            if (!validGenders.includes(gender as 'M' | 'F' | 'Other')) {
+                throw new Error(`Gender ${gender} is not valid`);
+            }
 
+            const user = new UserPlayerEntity();
+            const hashedPassword = await bcrypt.hash(password, this.saltRounds);
+
+            // Asignación de valores
+            user.firstName = firstName;
+            user.lastName = lastName;
+            user.email = email;
+            user.gender = gender as 'M' | 'F' | 'Other'; // Conversión de tipo segura
+            user.phoneNumber = phoneNumber;
+            user.dni = dni;
             user.status = 'ACTIVE';
-            user.createdAt = moment(new Date()).format();
-            user.birthDate = moment(user.birthDate, 'DD/MM/YYYY').format();
+            user.createdAt = new Date();
+            user.birthDate = moment(birthDate, 'DD/MM/YYYY').toDate();
             user.password = hashedPassword;
 
+            // Insertar los datos en el repositorio
             await this.userPlayerRepository.insertData(user);
         } catch (error) {
-            throw new Error('Error in insert data' + error);
+            throw new Error('Error in insert data: ' + error);
         }
     }
 
-    public async inactivate(id: number): Promise<Boolean> {
+    public async inactivate(id: string): Promise<Boolean> {
         try {
             const user = await this.userPlayerRepository.getId(id);
 
@@ -62,7 +86,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
     }
 
     public async update(
-        id: number,
+        id: string,
         newData: Partial<UserPlayerEntity>,
     ): Promise<Boolean> {
         try {
@@ -92,7 +116,7 @@ export class UserPlayerService implements UserPlayerServiceInterface {
     public async authenticate(
         email: string,
         password: string,
-    ): Promise<{ token: string; user: UserPlayerObject } | null> {
+    ): Promise<{ token: string; user: UserPlayerEntity } | null> {
         try {
             const user = await this.userPlayerRepository.search(email);
             if (!user) return null;

@@ -48,7 +48,7 @@ export class ResetPasswordRepository
     @initializeConnection()
     @Transactional()
     async storeResetToken(
-        userId: number,
+        userId: string,
         token: string,
         expiateToken: Date,
     ): Promise<ResetPasswordEntity> {

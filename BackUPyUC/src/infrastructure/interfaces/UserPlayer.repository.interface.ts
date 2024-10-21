@@ -1,11 +1,11 @@
 import { UserPlayerEntity } from '../../core/entities/UserPlayer.entity';
 
 export interface UserPlayerRepositoryInterface {
-    getId(id: number): Promise<any>;
+    getId(id: string): Promise<any>;
 
     search(email: string): Promise<any>;
 
-    insertData(data: object): Promise<any>;
+    insertData(data: UserPlayerEntity): Promise<any>;
 
     updateData(data: UserPlayerEntity): Promise<UserPlayerEntity>;
 }

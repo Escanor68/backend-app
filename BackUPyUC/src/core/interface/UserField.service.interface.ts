@@ -1,17 +1,23 @@
 import { UserFieldEntity } from '../entities/UserField.entity';
-import { UserFieldObject } from '../../infrastructure/interfaces/UserField.interface';
 
 export interface UserFieldServiceInterface {
-    insertData(user: UserFieldEntity): Promise<void>;
+    insertData(
+        field_name: string,
+        email: string,
+        password: string,
+        phoneNumber: string,
+        tax_id: string,
+        address: string,
+    ): Promise<void>;
 
-    update(id: number, newData: Partial<UserFieldEntity>): Promise<Boolean>;
+    update(id: string, newData: Partial<UserFieldEntity>): Promise<Boolean>;
 
     authenticate(
         email: string,
         password: string,
-    ): Promise<{ token: string; user: UserFieldObject } | null>;
+    ): Promise<{ token: string; user: UserFieldEntity } | null>;
 
-    inactivate(id: number): Promise<Boolean>;
+    inactivate(id: string): Promise<Boolean>;
 
     sendTokenReset(email: string): Promise<Boolean>;
 

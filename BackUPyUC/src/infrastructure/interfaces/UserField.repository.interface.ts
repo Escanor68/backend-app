@@ -1,13 +1,13 @@
 import { UserFieldEntity } from '../../core/entities/UserField.entity';
 
 export interface UserFieldRepositoryInterface {
-    getId(id: number): Promise<any>;
+    getId(id: string): Promise<UserFieldEntity | null>;
 
-    getAll(): Promise<any>;
+    getAll(): Promise<UserFieldEntity[] | null>;
 
-    search(email: string): Promise<any>;
+    search(email: string): Promise<UserFieldEntity | null>;
 
-    insertData(data: object): Promise<any>;
+    insertData(data: UserFieldEntity): Promise<UserFieldEntity>;
 
     updateData(data: UserFieldEntity): Promise<UserFieldEntity>;
 }
