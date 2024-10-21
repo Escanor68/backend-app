@@ -150,4 +150,21 @@ export class UserFieldController implements UserFieldControllerInterface {
             return;
         }
     }
+
+    async getNearbyFields(req: Request, res: Response): Promise<void> {
+        try {
+            const { latitude, longitude } = req.body;
+            const userNearby = await userFieldService.getNearbyFields(
+                latitude,
+                longitude,
+            );
+
+            res.status(200).send(userNearby);
+        } catch (error: any) {
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error?.message,
+            });
+            return;
+        }
+    }
 }

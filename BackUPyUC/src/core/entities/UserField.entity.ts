@@ -77,4 +77,20 @@ export class UserFieldEntity {
         nullable: false,
     })
     address: string;
+
+    @Column({
+        type: 'decimal',
+        precision: 9, // Total de dígitos
+        scale: 6, // Cantidad de decimales
+        nullable: true,
+    })
+    latitude: number;
+
+    @Column({
+        type: 'decimal',
+        precision: 9, // Total de dígitos
+        scale: 6, // Cantidad de decimales
+        nullable: true,
+    })
+    longitude: number;
 }

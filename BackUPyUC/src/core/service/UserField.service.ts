@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import axios from 'axios';
 dotenv.config();
 
 export class UserFieldService implements UserFieldServiceInterface {
@@ -17,6 +18,7 @@ export class UserFieldService implements UserFieldServiceInterface {
     private jwtSecret = process.env.JWT_SECRET || 'hello';
     private emailUser = process.env.EMAIL_USER;
     private emailPass = process.env.EMAIL_PASS;
+    private apiKeyGoogle = process.env.API_GOOGLE;
 
     constructor(
         userFieldRepository: UserFieldRepositoryInterface,
@@ -25,14 +27,18 @@ export class UserFieldService implements UserFieldServiceInterface {
         this.userFieldRepository = userFieldRepository;
         this.resetPasswordRepository = resetPasswordRepository;
     }
-    public async insertData(user: UserFieldObject): Promise<void> {
+    public async insertData(user: UserFieldEntity): Promise<void> {
         try {
             const hashedPassword = await bcrypt.hash(
                 user.password,
                 this.saltRounds,
             );
+
+            const coordenadas = await this.getCoordinates(user.address);
             user.status = 'ACTIVE';
             user.password = hashedPassword;
+            user.latitude = coordenadas.lat;
+            user.latitude = coordenadas.lng;
 
             await this.userFieldRepository.insertData(user);
         } catch (error) {
@@ -221,10 +227,65 @@ export class UserFieldService implements UserFieldServiceInterface {
         }
     }
 
+    public async getNearbyFields(
+        userLat: number,
+        userLng: number,
+    ): Promise<UserFieldEntity[]> {
+        const allFields = await this.userFieldRepository.getAll();
+
+        const nearbyFields = allFields.filter((field: UserFieldEntity) => {
+            const distance = this.calculateDistance(
+                userLat,
+                userLng,
+                field.latitude,
+                field.longitude,
+            );
+            return distance <= 20; // Solo las canchas dentro de 20 km
+        });
+
+        return nearbyFields;
+    }
+
     private async validatePassword(
         storedPassword: string,
         inputPassword: string,
     ): Promise<boolean> {
         return bcrypt.compare(inputPassword, storedPassword);
+    }
+
+    private async getCoordinates(
+        address: string,
+    ): Promise<{ lat: number; lng: number }> {
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${this.apiKeyGoogle}`;
+
+        try {
+            const response = await axios.get(url);
+            const location = response.data.results[0].geometry.location;
+            return { lat: location.lat, lng: location.lng };
+        } catch (error: any) {
+            throw new Error(`Error al obtener coordenadas: ${error?.message}`);
+        }
+    }
+
+    private calculateDistance(
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number,
+    ): number {
+        const R = 6371; // Radio de la Tierra en km
+        const dLat = (lat2 - lat1) * (Math.PI / 180);
+        const dLon = (lon2 - lon1) * (Math.PI / 180);
+
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * (Math.PI / 180)) *
+                Math.cos(lat2 * (Math.PI / 180)) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        return distance; // Retorna la distancia en km
     }
 }

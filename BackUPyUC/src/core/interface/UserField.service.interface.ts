@@ -2,7 +2,7 @@ import { UserFieldEntity } from '../entities/UserField.entity';
 import { UserFieldObject } from '../../infrastructure/interfaces/UserField.interface';
 
 export interface UserFieldServiceInterface {
-    insertData(user: UserFieldObject): Promise<void>;
+    insertData(user: UserFieldEntity): Promise<void>;
 
     update(id: number, newData: Partial<UserFieldEntity>): Promise<Boolean>;
 
@@ -16,4 +16,9 @@ export interface UserFieldServiceInterface {
     sendTokenReset(email: string): Promise<Boolean>;
 
     resetPassword(token: string, newPassword: string): Promise<Boolean>;
+
+    getNearbyFields(
+        userLat: number,
+        userLng: number,
+    ): Promise<UserFieldEntity[]>;
 }

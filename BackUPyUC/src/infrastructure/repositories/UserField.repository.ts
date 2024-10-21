@@ -13,6 +13,18 @@ export class UserFieldRepository implements UserFieldRepositoryInterface {
     }
 
     @initializeConnection()
+    async getAll(): Promise<UserFieldEntity[] | null> {
+        try {
+            return await this.userFieldRepository.find({
+                where: { status: 'ACTIVE' },
+            });
+        } catch (error: any) {
+            console.error('Error in search:', error?.message);
+            return null;
+        }
+    }
+
+    @initializeConnection()
     async getId(id: number): Promise<UserFieldEntity | null> {
         return (
             (await this.userFieldRepository
