@@ -99,6 +99,36 @@ export class FutbolService implements FutbolServiceInterface {
         }
     }
 
+    async liberarCancha(id: string): Promise<void> {
+        try {
+            // Obtener la cancha a liberar usando el ID
+            const field = await this.futbolRepository.getFieldById(id);
+
+            // Si la cancha no existe, lanzar un error
+            if (!field) {
+                throw new Error(`No existe una cancha con el ID: ${id}`);
+            }
+
+            // Si la cancha ya está libre, lanzar un error
+            if (field.reservation === 'Inactive') {
+                throw new Error(`La cancha con ID: ${id} ya está libre`);
+            }
+
+            // Actualizar los campos correspondientes para liberar la cancha
+            field.who_reserved_id = null;
+            field.who_reserved_name = null;
+            field.reservation = 'Inactive';
+
+            // Guardar los cambios en la base de datos
+            await this.futbolRepository.insertData(field);
+        } catch (error: any) {
+            // Manejo de errores personalizado
+            throw new Error(
+                `Error al liberar la cancha con ID: ${id}: ${error?.message}`,
+            );
+        }
+    }
+
     /**
      * Genera los turnos de 1:30 horas dentro del rango de disponibilidad, permitiendo que el último turno se exceda por un máximo de 30 minutos.
      * @param owner - El ID del dueño de la cancha.

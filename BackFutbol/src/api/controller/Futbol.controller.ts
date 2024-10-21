@@ -4,6 +4,7 @@ import { futbolService } from '../../core/service';
 import validateCrearCancha from './validations/cancha/crearCancha';
 import validateTraerCanchas from './validations/cancha/traerCanchas';
 import validateReservarCanchas from './validations/cancha/reservarCancha';
+import validateLiberarCanchas from './validations/cancha/liberarCancha';
 
 export class FutbolController implements FutbolControllerInterface {
     async crearTurnos(req: Request, res: Response): Promise<void> {
@@ -83,6 +84,27 @@ export class FutbolController implements FutbolControllerInterface {
                 who_reserved_id,
                 who_reserved_name,
             );
+
+            res.status(200).send({ response: 'Canchas reservada' });
+        } catch (error: any) {
+            res.status(500).send({
+                message: 'Error interno del servidor: ' + error?.message,
+            });
+            return;
+        }
+    }
+
+    async liberarCancha(req: Request, res: Response): Promise<void> {
+        try {
+            const validateBody = await validateLiberarCanchas(req.body);
+            if (validateBody.error) {
+                res.status(404).send(validateBody);
+                return;
+            }
+
+            const { id } = req.body;
+
+            await futbolService.liberarCancha(id);
 
             res.status(200).send({ response: 'Canchas reservada' });
         } catch (error: any) {

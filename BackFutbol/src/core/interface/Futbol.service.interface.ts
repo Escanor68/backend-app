@@ -18,4 +18,6 @@ export interface FutbolServiceInterface {
         who_reserved_id: number,
         who_reserved_name: string,
     ): Promise<void>;
+
+    liberarCancha(id: string): Promise<void>;
 }

@@ -8,4 +8,5 @@ export interface FutbolRepositoryInterface {
         schedule: string,
         fieldName: string,
     ): Promise<SoccerFieldEntities | null>;
+    getFieldById(id: string): Promise<SoccerFieldEntities | null>;
 }

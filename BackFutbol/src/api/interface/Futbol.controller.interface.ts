@@ -12,4 +12,9 @@ export interface FutbolControllerInterface {
         res: Response,
         next: NextFunction,
     ): Promise<void>;
+    liberarCancha(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void>;
 }

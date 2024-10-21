@@ -66,4 +66,24 @@ export class FutbolRepository implements FutbolRepositoryInterface {
             );
         }
     }
+
+    @initializeConnection()
+    async getFieldById(id: string): Promise<SoccerFieldEntities | null> {
+        {
+            try {
+                // Buscar todas la canchas donde coincida los filtros
+                const fields = await this.futbolRepository.findOne({
+                    where: {
+                        id: id,
+                    },
+                });
+
+                return fields || null;
+            } catch (error: any) {
+                throw new Error(
+                    'Error al traer los datos del Dueño: ' + error?.message,
+                );
+            }
+        }
+    }
 }
