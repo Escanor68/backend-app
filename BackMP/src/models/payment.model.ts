@@ -5,32 +5,45 @@ export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  userId: string;
+  @Column({ nullable: true })
+  bookingId: string;
 
-  @Column()
+  @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
-
-  @Column()
-  currency: string;
 
   @Column()
   status: string;
 
-  @Column({ nullable: true })
-  mercadoPagoId: string;
+  @Column({ name: 'payment_method' })
+  paymentMethod: string;
+
+  @Column('json')
+  field: {
+    id: string;
+    name: string;
+  };
 
   @Column({ nullable: true })
   preferenceId: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, any>;
-
   @Column({ nullable: true })
-  refundId: string;
+  mercadoPagoId: string;
 
-  @Column({ nullable: true })
-  refundStatus: string;
+  @Column('json', { nullable: true })
+  refund: {
+    status: string;
+    reason: string;
+    amount: number;
+    date: Date;
+  } | null;
+
+  @Column('json', { nullable: true })
+  invoice: {
+    number: string;
+    url: string;
+    sentTo: string[];
+    lastSentAt: Date;
+  } | null;
 
   @CreateDateColumn()
   createdAt: Date;
