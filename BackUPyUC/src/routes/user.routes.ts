@@ -1,25 +1,30 @@
 import { Router } from 'express';
-import { UserController } from '../api/controllers/user.controller';
-import { UserService } from '../api/services/user.service';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { UserController } from '../controllers/user.controller';
+import { authenticate, requireRole } from '../middleware/auth';
+import { validateProfile, validateFavoriteField } from '../middleware/validators/user.validator';
 
 const router = Router();
-const userService = new UserService();
-const userController = new UserController(userService);
+const userController = new UserController();
 
-// All routes are protected
-router.use(authMiddleware);
+// Rutas protegidas de usuario
+router.use(authenticate());
 
-// Profile routes
-router.get('/me', userController.getProfile);
-router.patch('/me', userController.updateProfile);
+// Campos favoritos
+router.post('/me/favorite-fields', validateFavoriteField, userController.addFavoriteField);
+router.delete('/me/favorite-fields/:fieldId', userController.removeFavoriteField);
+router.get('/me/favorite-fields', userController.getFavoriteFields);
 
-// Bookings routes
-router.get('/me/bookings', userController.getBookings);
+// Notificaciones
+router.get('/me/notifications', userController.getNotifications);
+router.patch('/me/notifications/:id/read', userController.markNotificationAsRead);
+router.delete('/me/notifications/:id', userController.deleteNotification);
 
-// Favorites routes
-router.get('/me/favorites', userController.getFavorites);
-router.post('/me/favorites/:fieldId', userController.addFavorite);
-router.delete('/me/favorites/:fieldId', userController.removeFavorite);
+// Perfil
+router.put('/me/profile', validateProfile, userController.updateProfile);
+
+// Rutas de administrador
+router.get('/admin/users', requireRole('admin'), userController.getAllUsers);
+router.post('/admin/users/:id/block', requireRole('admin'), userController.blockUser);
+router.post('/admin/users/:id/role', requireRole('admin'), userController.updateUserRole);
 
 export default router; 
