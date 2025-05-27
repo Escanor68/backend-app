@@ -51,10 +51,23 @@ const registerSchema = Joi.object({
         })
 });
 
-export const validateLoginInput = async (data: any): Promise<UserCredentials> => {
-    return loginSchema.validateAsync(data);
+export const validateLoginInput = (data: any) => {
+    const schema = Joi.object({
+        email: Joi.string().email().required(),
+        password: Joi.string().min(6).required()
+    });
+
+    return schema.validate(data);
 };
 
-export const validateRegisterInput = async (data: any): Promise<any> => {
-    return registerSchema.validateAsync(data);
+export const validateRegisterInput = (data: any) => {
+    const schema = Joi.object({
+        email: Joi.string().email().required(),
+        password: Joi.string().min(6).required(),
+        name: Joi.string().required(),
+        phone: Joi.string().pattern(/^\+?[0-9]{8,15}$/).optional(),
+        role: Joi.string().valid('user', 'admin').default('user')
+    });
+
+    return schema.validate(data);
 }; 

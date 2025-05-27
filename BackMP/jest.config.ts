@@ -3,7 +3,9 @@
  * https://jestjs.io/docs/configuration
  */
 
-export default {
+import type { Config } from '@jest/types';
+
+const config: Config.InitialOptions = {
     // All imported modules in your tests should be mocked automatically
     // automock: false,
 
@@ -20,10 +22,15 @@ export default {
     collectCoverage: true,
 
     // An array of glob patterns indicating a set of files for which coverage information should be collected
-    collectCoverageFrom: ['<rootDir>/src/**/*.{js,jsx,ts,tsx}'],
+    collectCoverageFrom: [
+        'src/**/*.{ts,tsx}',
+        '!src/**/*.d.ts',
+        '!src/__tests__/**/*',
+        '!src/types/**/*',
+    ],
 
     // The directory where Jest should output its coverage files
-    coverageDirectory: './coverage',
+    coverageDirectory: 'coverage',
 
     // An array of regexp pattern strings used to skip coverage collection
     coveragePathIgnorePatterns: [
@@ -63,7 +70,14 @@ export default {
     ],
 
     // An object that configures minimum threshold enforcement for coverage results
-    // coverageThreshold: undefined,
+    coverageThreshold: {
+        global: {
+            branches: 80,
+            functions: 80,
+            lines: 80,
+            statements: 80,
+        },
+    },
 
     // A path to a custom dependency extractor
     // dependencyExtractor: undefined,
@@ -97,16 +111,7 @@ export default {
     // ],
 
     // An array of file extensions your modules use
-    // moduleFileExtensions: [
-    //   "js",
-    //   "mjs",
-    //   "cjs",
-    //   "jsx",
-    //   "ts",
-    //   "tsx",
-    //   "json",
-    //   "node"
-    // ],
+    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
     // moduleNameMapper: {},
@@ -162,7 +167,7 @@ export default {
     setupFiles: ['dotenv/config'],
 
     // A list of paths to modules that run some code to configure or set up the testing framework before each test
-    // setupFilesAfterEnv: [],
+    setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
 
     // The number of seconds after which a test is considered as slow and reported as such in the results.
     // slowTestThreshold: 5,
@@ -171,7 +176,7 @@ export default {
     // snapshotSerializers: [],
 
     // The test environment that will be used for testing
-    // testEnvironment: "jest-environment-node",
+    testEnvironment: 'node',
 
     // Options that will be passed to the testEnvironment
     // testEnvironmentOptions: {},
@@ -180,10 +185,7 @@ export default {
     // testLocationInResults: false,
 
     // The glob patterns Jest uses to detect test files
-    // testMatch: [
-    //   "**/__tests__/**/*.[jt]s?(x)",
-    //   "**/?(*.)+(spec|test).[tj]s?(x)"
-    // ],
+    testMatch: ['**/__tests__/**/*.test.ts'],
 
     // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
     // testPathIgnorePatterns: [
@@ -200,7 +202,9 @@ export default {
     // testRunner: "jest-circus/runner",
 
     // A map from regular expressions to paths to transformers
-    // transform: undefined,
+    transform: {
+        '^.+\\.tsx?$': 'ts-jest',
+    },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
     // transformIgnorePatterns: [
@@ -220,3 +224,5 @@ export default {
     // Whether to use watchman for file crawling
     // watchman: true,
 };
+
+export default config;

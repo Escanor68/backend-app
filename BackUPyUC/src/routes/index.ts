@@ -1,13 +1,11 @@
 import { Router } from 'express';
 import authRoutes from './auth.routes';
-import userRoutes from './users.routes';
+import userRoutes from './user.routes';
 
 const router = Router();
 
-// Rutas de autenticación
+// Base URL: http://localhost:3002
 router.use('/auth', authRoutes);
-
-// Rutas de usuarios
 router.use('/users', userRoutes);
 
 export default router; 

@@ -1,21 +1,31 @@
 import { Router } from 'express';
-import { PaymentController } from '../api/controllers/payment.controller';
-import { authMiddleware, hasRole } from '../middleware/authMiddleware';
+import { PaymentController } from '../controllers/payment.controller';
+import { validatePaymentRequest } from '../middleware/validators/payment.validator';
+import { authenticate, requireRole } from '../middleware/auth';
 
 const router = Router();
+const paymentController = new PaymentController();
 
-// Todas las rutas requieren autenticación excepto el webhook
-router.post('/webhook', PaymentController.handleWebhook);
+// Ruta para crear un nuevo pago - requiere autenticación
+router.post('/preference', 
+    authenticate(),
+    validatePaymentRequest,
+    paymentController.createPreference
+);
 
-// Rutas autenticadas
-router.use(authMiddleware);
+// Ruta para obtener el estado de un pago - requiere autenticación
+router.get('/:id/status',
+    authenticate(),
+    paymentController.getPaymentStatus
+);
 
-// Rutas para usuarios autenticados
-router.post('/', PaymentController.createPayment);
-router.get('/user', PaymentController.getUserPayments);
-router.get('/:id', PaymentController.getPaymentStatus);
+// Ruta para obtener todos los pagos - solo admin
+router.get('/all',
+    requireRole('admin'),
+    paymentController.getAllPayments
+);
 
-// Rutas que requieren rol de admin
-router.post('/:id/refund', hasRole(['admin']), PaymentController.refundPayment);
+// Webhook para notificaciones de MercadoPago - sin autenticación ya que viene de MP
+router.post('/webhook', paymentController.handleWebhook);
 
 export default router; 

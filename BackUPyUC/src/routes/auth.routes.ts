@@ -1,14 +1,18 @@
 import { Router } from 'express';
 import { AuthController } from '../api/controllers/auth.controller';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { AuthService } from '../api/services/auth.service';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
+const authService = new AuthService();
+const authController = new AuthController(authService);
 
-// Rutas públicas
-router.post('/login', AuthController.login);
-router.post('/register', AuthController.register);
+// Public routes
+router.post('/login', authController.login);
+router.post('/register', authController.register);
+router.post('/refresh', authController.refresh);
 
-// Rutas protegidas
-router.post('/refresh-token', authMiddleware, AuthController.refreshToken);
+// Protected routes
+router.post('/logout', authMiddleware, authController.logout);
 
 export default router; 
