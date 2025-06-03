@@ -22,11 +22,17 @@ export class InvoiceService {
                     amount: payment.amount,
                     status: payment.status,
                     paymentMethod: payment.paymentMethod,
-                    field: payment.field
-                }
+                    field: payment.field,
+                },
             };
 
-            const pdfPath = path.join(__dirname, '..', '..', 'invoices', `${invoiceNumber}.pdf`);
+            const pdfPath = path.join(
+                __dirname,
+                '..',
+                '..',
+                'invoices',
+                `${invoiceNumber}.pdf`,
+            );
             await createPDF(pdfData, pdfPath);
 
             // Actualizar payment con la información de la factura
@@ -34,7 +40,7 @@ export class InvoiceService {
                 number: invoiceNumber,
                 url: `/invoices/${invoiceNumber}.pdf`,
                 sentTo: [],
-                lastSentAt: null
+                lastSentAt: null,
             };
 
             await this.paymentRepository.save(payment);
@@ -51,16 +57,24 @@ export class InvoiceService {
                 throw new Error('La factura no existe');
             }
 
-            const invoicePath = path.join(__dirname, '..', '..', 'invoices', `${payment.invoice.number}.pdf`);
-            
+            const invoicePath = path.join(
+                __dirname,
+                '..',
+                '..',
+                'invoices',
+                `${payment.invoice.number}.pdf`,
+            );
+
             await sendEmail({
                 to: email,
                 subject: `Factura ${payment.invoice.number}`,
                 text: `Adjunto encontrará su factura por el pago ${payment.id}`,
-                attachments: [{
-                    filename: `${payment.invoice.number}.pdf`,
-                    path: invoicePath
-                }]
+                attachments: [
+                    {
+                        filename: `${payment.invoice.number}.pdf`,
+                        path: invoicePath,
+                    },
+                ],
             });
 
             // Actualizar el registro de envíos
@@ -71,4 +85,4 @@ export class InvoiceService {
             throw new Error('Error al enviar la factura por email');
         }
     }
-} 
+}

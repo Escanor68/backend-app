@@ -28,14 +28,14 @@ export const config = {
     jwt: {
         secret: process.env.JWT_SECRET || 'tu-secreto-seguro-temporal',
         expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-        refreshSecret: process.env.JWT_REFRESH_SECRET || 'tu-refresh-secreto-temporal',
-        refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d'
+        refreshSecret:
+            process.env.JWT_REFRESH_SECRET || 'tu-refresh-secreto-temporal',
+        refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     },
-
     // Configuración de CORS
     cors: {
         origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-        credentials: true
+        credentials: true,
     },
 
     // Configuración de Email
@@ -45,13 +45,13 @@ export const config = {
         secure: process.env.SMTP_SECURE === 'true',
         auth: {
             user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-        }
+            pass: process.env.SMTP_PASS,
+        },
     },
 
     // Configuración de Rate Limiting
     rateLimit: {
         windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 100 // límite de 100 solicitudes por ventana
-    }
-}; 
+        max: 100, // límite de 100 solicitudes por ventana
+    },
+};

@@ -10,4 +10,4 @@ router.use('/auth', authRoutes);
 // Rutas de usuario
 router.use('/users', userRoutes);
 
-export default router; 
+export default router;

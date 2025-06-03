@@ -4,15 +4,14 @@ import { AuthService } from '../api/services/auth.service';
 import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
-const authService = new AuthService();
-const authController = new AuthController(authService);
+const authController = new AuthController();
 
 // Public routes
 router.post('/login', authController.login);
 router.post('/register', authController.register);
-router.post('/refresh', authController.refresh);
+router.post('/refresh', authController.refreshToken);
 
 // Protected routes
 router.post('/logout', authMiddleware, authController.logout);
 
-export default router; 
+export default router;
