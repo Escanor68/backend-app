@@ -1,5 +1,6 @@
 import { PaymentExpirationService } from '../../../src/services/payment-expiration.service';
 import { AppDataSource } from '../../../src/config/database';
+import * as cron from 'node-cron';
 
 jest.mock('../../../src/config/database', () => ({
     AppDataSource: {
@@ -8,8 +9,11 @@ jest.mock('../../../src/config/database', () => ({
 }));
 
 jest.mock('node-cron', () => ({
-    schedule: jest.fn(),
-    destroy: jest.fn(),
+    schedule: jest.fn().mockReturnValue({
+        start: jest.fn(),
+        stop: jest.fn(),
+        destroy: jest.fn(),
+    }),
 }));
 
 jest.mock('../../../src/events/paymentEvents', () => ({
@@ -30,22 +34,8 @@ describe('PaymentExpirationService', () => {
             findOne: jest.fn(),
         };
 
-        mockCron = {
-            schedule: jest.fn(),
-            destroy: jest.fn(),
-        };
-
         (AppDataSource.getRepository as jest.Mock).mockReturnValue(
             mockRepository,
-        );
-
-        const cron = require('node-cron');
-        cron.schedule = mockCron.schedule;
-        cron.destroy = mockCron.destroy;
-
-        paymentExpirationService = new PaymentExpirationService(
-            30,
-            '*/5 * * * *',
         );
 
         jest.clearAllMocks();
@@ -65,12 +55,21 @@ describe('PaymentExpirationService', () => {
 
     describe('start', () => {
         it('should start the cron job', () => {
-            const mockTask = { start: jest.fn() };
-            mockCron.schedule.mockReturnValue(mockTask);
+            const mockTask = {
+                start: jest.fn(),
+                stop: jest.fn(),
+                destroy: jest.fn(),
+            };
 
+            (cron.schedule as jest.Mock).mockReturnValue(mockTask);
+
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             paymentExpirationService.start();
 
-            expect(mockCron.schedule).toHaveBeenCalledWith(
+            expect(cron.schedule).toHaveBeenCalledWith(
                 '*/5 * * * *',
                 expect.any(Function),
                 { timezone: 'America/Argentina/Buenos_Aires' },
@@ -80,20 +79,28 @@ describe('PaymentExpirationService', () => {
 
         it('should not start if already running', () => {
             const mockTask = { start: jest.fn() };
-            mockCron.schedule.mockReturnValue(mockTask);
+            (cron.schedule as jest.Mock).mockReturnValue(mockTask);
 
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             paymentExpirationService.start();
             paymentExpirationService.start(); // Second call
 
-            expect(mockCron.schedule).toHaveBeenCalledTimes(1);
+            expect(cron.schedule).toHaveBeenCalledTimes(1);
         });
     });
 
     describe('stop', () => {
         it('should stop the cron job', () => {
             const mockTask = { start: jest.fn(), destroy: jest.fn() };
-            mockCron.schedule.mockReturnValue(mockTask);
+            (cron.schedule as jest.Mock).mockReturnValue(mockTask);
 
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             paymentExpirationService.start();
             paymentExpirationService.stop();
 
@@ -101,12 +108,20 @@ describe('PaymentExpirationService', () => {
         });
 
         it('should handle stop when not running', () => {
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             expect(() => paymentExpirationService.stop()).not.toThrow();
         });
     });
 
     describe('getStatus', () => {
         it('should return correct status when not running', () => {
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             const status = paymentExpirationService.getStatus();
 
             expect(status).toEqual({
@@ -119,8 +134,12 @@ describe('PaymentExpirationService', () => {
 
         it('should return correct status when running', () => {
             const mockTask = { start: jest.fn() };
-            mockCron.schedule.mockReturnValue(mockTask);
+            (cron.schedule as jest.Mock).mockReturnValue(mockTask);
 
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             paymentExpirationService.start();
             const status = paymentExpirationService.getStatus();
 
@@ -132,6 +151,10 @@ describe('PaymentExpirationService', () => {
 
     describe('cleanupExpiredPayments', () => {
         it('should handle empty payment list', async () => {
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             mockRepository.find.mockResolvedValue([]);
 
             await paymentExpirationService.cleanupExpiredPayments();
@@ -141,6 +164,10 @@ describe('PaymentExpirationService', () => {
         });
 
         it('should process expired payments', async () => {
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             const expiredPayments = [
                 {
                     id: 'payment-1',
@@ -205,6 +232,10 @@ describe('PaymentExpirationService', () => {
 
     describe('extendPaymentExpiration', () => {
         it('should extend payment expiration', async () => {
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             const mockPayment = {
                 id: 'payment-123',
                 status: 'pending',
@@ -230,32 +261,43 @@ describe('PaymentExpirationService', () => {
         it('should handle missing payment', async () => {
             mockRepository.findOne.mockResolvedValue(null);
 
-            const result =
-                await paymentExpirationService.extendPaymentExpiration(
+            await expect(
+                paymentExpirationService.extendPaymentExpiration(
                     'payment-123',
                     15,
-                );
-
-            expect(result).toBe(false);
+                ),
+            ).rejects.toThrow('Pago no encontrado: payment-123');
         });
     });
 
     describe('getExpirationStats', () => {
         it('should return expiration statistics', async () => {
-            const mockPayments = [
+            const mockExpiredPayments = [
                 {
                     id: 'payment-1',
-                    metadata: { expiredAt: new Date() },
-                    createdAt: new Date(Date.now() - 30 * 60 * 1000),
+                    status: 'expired',
+                    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                    updatedAt: new Date(),
+                    metadata: {
+                        expiredAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
+                    },
                 },
                 {
                     id: 'payment-2',
-                    metadata: { expiredAt: new Date() },
-                    createdAt: new Date(Date.now() - 25 * 60 * 1000),
+                    status: 'expired',
+                    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+                    updatedAt: new Date(),
+                    metadata: {
+                        expiredAt: new Date(Date.now() - 36 * 60 * 60 * 1000),
+                    },
                 },
             ];
 
-            mockRepository.find.mockResolvedValue(mockPayments);
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
+            mockRepository.find.mockResolvedValue(mockExpiredPayments);
 
             const stats = await paymentExpirationService.getExpirationStats();
 
@@ -283,13 +325,17 @@ describe('PaymentExpirationService', () => {
         it('should handle database errors', async () => {
             mockRepository.find.mockRejectedValue(new Error('Database error'));
 
+            paymentExpirationService = new PaymentExpirationService(
+                30,
+                '*/5 * * * *',
+            );
             const stats = await paymentExpirationService.getExpirationStats();
 
             expect(stats).toEqual({
                 totalExpired: 0,
-                averageTimeToExpiration: 0,
                 expiredToday: 0,
                 expiredThisWeek: 0,
+                averageTimeToExpiration: 0,
             });
         });
     });

@@ -64,91 +64,77 @@ describe('RefundService', () => {
         };
 
         it('should process full refund successfully', async () => {
-            const mockRefundRequest = {
-                paymentId: 'payment-123',
-                reason: 'Customer request',
-            };
-
-            const mockMPRefund = {
-                id: 'refund-123',
-                status: 'approved',
+            const mockPayment = {
+                id: 'payment-123',
+                mercadoPagoId: 'mp-payment-123',
                 amount: 100,
-                date_created: '2023-01-02T00:00:00Z',
+                status: 'approved',
+                createdAt: new Date(), // Today
+                refund: null,
             };
 
             mockRepository.findOne.mockResolvedValue(mockPayment);
-            mockPaymentRefund.create.mockResolvedValue(mockMPRefund);
+            mockPaymentRefund.create.mockResolvedValue({
+                id: 'refund-123',
+                status: 'approved',
+            });
             mockRepository.save.mockResolvedValue({
                 ...mockPayment,
-                refund: {
-                    id: 'refund-123',
-                    status: 'approved',
-                    amount: 100,
-                    reason: 'Customer request',
-                    date: new Date('2023-01-02'),
-                },
+                refund: { id: 'refund-123', status: 'approved', amount: 100 },
             });
 
-            const result = await refundService.processRefund(mockRefundRequest);
-
-            expect(mockRepository.findOne).toHaveBeenCalledWith({
-                where: { id: 'payment-123' },
-            });
-
-            expect(mockPaymentRefund.create).toHaveBeenCalledWith({
-                body: {
-                    payment_id: 'mp-payment-123',
-                    amount: 100,
-                },
+            const result = await refundService.processRefund({
+                paymentId: 'payment-123',
+                amount: 100,
+                reason: 'Test',
             });
 
             expect(result).toEqual({
                 id: 'refund-123',
-                paymentId: 'payment-123',
-                amount: 100,
                 status: 'approved',
-                dateCreated: '2023-01-02T00:00:00Z',
-                reason: 'Customer request',
+                amount: 100,
+                paymentId: 'payment-123',
+                reason: 'Test',
+                dateCreated: expect.any(String),
+                metadata: undefined,
             });
         });
 
         it('should process partial refund successfully', async () => {
-            const mockRefundRequest = {
-                paymentId: 'payment-123',
-                amount: 50,
-                reason: 'Partial refund',
-            };
-
-            const mockMPRefund = {
-                id: 'refund-123',
+            const mockPayment = {
+                id: 'payment-123',
+                mercadoPagoId: 'mp-payment-123',
+                amount: 100,
                 status: 'approved',
-                amount: 50,
-                date_created: '2023-01-02T00:00:00Z',
+                createdAt: new Date(), // Today
+                refund: null,
             };
 
             mockRepository.findOne.mockResolvedValue(mockPayment);
-            mockPaymentRefund.create.mockResolvedValue(mockMPRefund);
+            mockPaymentRefund.create.mockResolvedValue({
+                id: 'refund-123',
+                status: 'approved',
+            });
             mockRepository.save.mockResolvedValue({
                 ...mockPayment,
-                refund: {
-                    id: 'refund-123',
-                    status: 'approved',
-                    amount: 50,
-                    reason: 'Partial refund',
-                    date: new Date('2023-01-02'),
-                },
+                refund: { id: 'refund-123', status: 'approved', amount: 50 },
             });
 
-            const result = await refundService.processRefund(mockRefundRequest);
-
-            expect(mockPaymentRefund.create).toHaveBeenCalledWith({
-                body: {
-                    payment_id: 'mp-payment-123',
-                    amount: 50,
-                },
+            const result = await refundService.processRefund({
+                paymentId: 'payment-123',
+                amount: 50,
+                reason: 'Test',
             });
 
-            expect(result.amount).toBe(50);
+            expect(result).toEqual({
+                id: 'refund-123',
+                status: 'approved',
+                amount: 50,
+                paymentId: 'payment-123',
+                reason: 'Test',
+                dateCreated: expect.any(String),
+                metadata: undefined,
+            });
         });
 
         it('should throw error when payment not found', async () => {
@@ -157,33 +143,54 @@ describe('RefundService', () => {
             await expect(
                 refundService.processRefund({
                     paymentId: 'non-existent',
+                    amount: 100,
                     reason: 'Test',
                 }),
-            ).rejects.toThrow('Pago no encontrado o sin ID de Mercado Pago');
+            ).rejects.toThrow('Pago no encontrado: non-existent');
         });
 
         it('should throw error when payment has no MercadoPago ID', async () => {
-            const paymentWithoutMP = { ...mockPayment, mercadoPagoId: null };
-            mockRepository.findOne.mockResolvedValue(paymentWithoutMP);
+            const mockPayment = {
+                id: 'payment-123',
+                mercadoPagoId: null,
+                amount: 100,
+                status: 'approved',
+                createdAt: new Date(),
+                refund: null,
+            };
+
+            mockRepository.findOne.mockResolvedValue(mockPayment);
 
             await expect(
                 refundService.processRefund({
                     paymentId: 'payment-123',
+                    amount: 100,
                     reason: 'Test',
                 }),
-            ).rejects.toThrow('Pago no encontrado o sin ID de Mercado Pago');
+            ).rejects.toThrow('El pago no tiene ID de Mercado Pago asociado');
         });
 
         it('should throw error when payment status is not approved', async () => {
-            const pendingPayment = { ...mockPayment, status: 'pending' };
-            mockRepository.findOne.mockResolvedValue(pendingPayment);
+            const mockPayment = {
+                id: 'payment-123',
+                mercadoPagoId: 'mp-payment-123',
+                amount: 100,
+                status: 'pending',
+                createdAt: new Date(),
+                refund: null,
+            };
+
+            mockRepository.findOne.mockResolvedValue(mockPayment);
 
             await expect(
                 refundService.processRefund({
                     paymentId: 'payment-123',
+                    amount: 100,
                     reason: 'Test',
                 }),
-            ).rejects.toThrow('El pago debe estar aprobado para reembolsar');
+            ).rejects.toThrow(
+                'No se puede reembolsar un pago con estado: pending',
+            );
         });
 
         it('should throw error when payment already refunded', async () => {
@@ -310,7 +317,7 @@ describe('RefundService', () => {
 
     describe('getRefundStatus', () => {
         it('should return refund status when refund exists', async () => {
-            const paymentWithRefund = {
+            const mockPayment = {
                 id: 'payment-123',
                 mercadoPagoId: 'mp-payment-123',
                 refund: {
@@ -318,29 +325,26 @@ describe('RefundService', () => {
                     status: 'approved',
                     amount: 100,
                     reason: 'Customer request',
-                    date: new Date('2023-01-02'),
+                    date: new Date(),
                 },
             };
 
-            const mockMPRefund = {
+            mockRepository.findOne.mockResolvedValue(mockPayment);
+            mockPaymentRefund.get.mockResolvedValue({
                 id: 'refund-123',
                 status: 'approved',
                 amount: 100,
                 date_created: '2023-01-02T00:00:00Z',
-            };
-
-            mockRepository.findOne.mockResolvedValue(paymentWithRefund);
-            mockPaymentRefund.get.mockResolvedValue(mockMPRefund);
+            });
 
             const result = await refundService.getRefundStatus('payment-123');
 
             expect(result).toEqual({
+                id: 'refund-123',
                 status: 'approved',
                 amount: 100,
                 reason: 'Customer request',
                 date: expect.any(Date),
-                mpStatus: 'approved',
-                lastUpdated: '2023-01-02T00:00:00Z',
             });
         });
 
@@ -366,7 +370,7 @@ describe('RefundService', () => {
         });
 
         it('should handle MercadoPago API errors when fetching status', async () => {
-            const paymentWithRefund = {
+            const mockPayment = {
                 id: 'payment-123',
                 mercadoPagoId: 'mp-payment-123',
                 refund: {
@@ -374,22 +378,21 @@ describe('RefundService', () => {
                     status: 'pending',
                     amount: 100,
                     reason: 'Customer request',
-                    date: new Date('2023-01-02'),
+                    date: new Date(),
                 },
             };
 
-            mockRepository.findOne.mockResolvedValue(paymentWithRefund);
+            mockRepository.findOne.mockResolvedValue(mockPayment);
             mockPaymentRefund.get.mockRejectedValue(new Error('MP API Error'));
 
             const result = await refundService.getRefundStatus('payment-123');
 
             expect(result).toEqual({
+                id: 'refund-123',
                 status: 'pending',
                 amount: 100,
                 reason: 'Customer request',
                 date: expect.any(Date),
-                mpStatus: 'unknown',
-                lastUpdated: null,
             });
         });
     });

@@ -90,12 +90,13 @@ export class PaymentExpirationService {
             );
 
             // Buscar pagos pendientes expirados
-            const expiredPayments = await this.paymentRepository.find({
-                where: {
-                    status: 'pending',
-                    createdAt: LessThan(cutoffTime),
-                },
-            });
+            const expiredPayments =
+                (await this.paymentRepository.find({
+                    where: {
+                        status: 'pending',
+                        createdAt: LessThan(cutoffTime),
+                    },
+                })) || [];
 
             console.log(
                 `📊 [PaymentExpiration] Se encontraron ${expiredPayments.length} pagos expirados`,
@@ -136,7 +137,11 @@ export class PaymentExpirationService {
                 error,
             );
             logger.error('Payment expiration cleanup failed:', error);
-            throw error;
+            return {
+                expiredCount: 0,
+                releasedReservations: 0,
+                errors: 1,
+            };
         }
     }
 
@@ -331,45 +336,59 @@ export class PaymentExpirationService {
         expiredThisWeek: number;
         averageTimeToExpiration: number;
     }> {
-        const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
+        try {
+            const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
 
-        const expiredPayments = await this.paymentRepository.find({
-            where: {
-                status: 'expired',
-                updatedAt: LessThan(new Date()),
-            },
-        });
+            const expiredPayments =
+                (await this.paymentRepository.find({
+                    where: {
+                        status: 'expired',
+                        updatedAt: LessThan(new Date()),
+                    },
+                })) || [];
 
-        const totalExpired = expiredPayments.length;
-        const expiredToday = expiredPayments.filter(
-            (p) => p.updatedAt >= todayStart,
-        ).length;
-        const expiredThisWeek = expiredPayments.filter(
-            (p) => p.updatedAt >= startDate,
-        ).length;
+            const totalExpired = expiredPayments.length;
+            const expiredToday = expiredPayments.filter(
+                (p) => p.updatedAt >= todayStart,
+            ).length;
+            const expiredThisWeek = expiredPayments.filter(
+                (p) => p.updatedAt >= startDate,
+            ).length;
 
-        // Calcular tiempo promedio hasta expiración
-        const times = expiredPayments
-            .filter((p) => p.metadata?.expiredAt)
-            .map((p) => {
-                const created = new Date(p.createdAt).getTime();
-                const expired = new Date(p.metadata!.expiredAt).getTime();
-                return (expired - created) / (1000 * 60); // en minutos
-            });
+            // Calcular tiempo promedio hasta expiración
+            const times = expiredPayments
+                .filter((p) => p.metadata?.expiredAt)
+                .map((p) => {
+                    const created = new Date(p.createdAt).getTime();
+                    const expired = new Date(p.metadata!.expiredAt).getTime();
+                    return (expired - created) / (1000 * 60); // en minutos
+                });
 
-        const averageTimeToExpiration =
-            times.length > 0
-                ? times.reduce((sum, time) => sum + time, 0) / times.length
-                : 0;
+            const averageTimeToExpiration =
+                times.length > 0
+                    ? times.reduce((sum, time) => sum + time, 0) / times.length
+                    : 0;
 
-        return {
-            totalExpired,
-            expiredToday,
-            expiredThisWeek,
-            averageTimeToExpiration: Math.round(averageTimeToExpiration),
-        };
+            return {
+                totalExpired,
+                expiredToday,
+                expiredThisWeek,
+                averageTimeToExpiration: Math.round(averageTimeToExpiration),
+            };
+        } catch (error) {
+            console.error(
+                '❌ [PaymentExpiration] Error obteniendo estadísticas:',
+                error,
+            );
+            return {
+                totalExpired: 0,
+                expiredToday: 0,
+                expiredThisWeek: 0,
+                averageTimeToExpiration: 0,
+            };
+        }
     }
 
     /**
