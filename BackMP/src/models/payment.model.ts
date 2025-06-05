@@ -58,10 +58,13 @@ export class Payment {
 
     @Column('json', { nullable: true })
     refund: {
+        id?: string;
         status: string;
         reason: string;
         amount: number;
         date: Date;
+        mercadoPagoRefundId?: string;
+        metadata?: any;
     } | null;
 
     @Column('json', { nullable: true })

@@ -7,23 +7,14 @@ exports.config = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 exports.config = {
+    port: process.env.PORT || 3003,
+    // Configuración de JWT
     jwt: {
-        secret: process.env.JWT_SECRET || 'tu-secreto-seguro-temporal',
-        expiresIn: '1h',
+        secret: process.env.JWT_SECRET || 'your-secret-key',
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
         refreshSecret: process.env.JWT_REFRESH_SECRET || 'tu-refresh-secreto-temporal',
         refreshExpiresIn: '7d',
     },
-    mercadopago: {
-        accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
-        publicKey: process.env.MERCADO_PAGO_PUBLIC_KEY,
-    },
-    server: {
-        port: process.env.PORT || 3000,
-    },
-    database: {
-        url: process.env.DATABASE_URL || 'tu-url-de-base-de-datos',
-    },
-    port: process.env.PORT || 3003,
     // Configuración de MercadoPago
     mercadoPago: {
         accessToken: process.env.MP_ACCESS_TOKEN,
@@ -40,11 +31,6 @@ exports.config = {
         synchronize: process.env.NODE_ENV !== 'production',
         logging: process.env.NODE_ENV === 'development',
         entities: ['src/models/**/*.model.ts'],
-    },
-    // Configuración de JWT
-    jwt: {
-        secret: process.env.JWT_SECRET || 'your-secret-key',
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     },
     // Configuración de CORS
     cors: {

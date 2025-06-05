@@ -158,7 +158,7 @@ const config: Config.InitialOptions = {
     // rootDir: undefined,
 
     // A list of paths to directories that Jest should use to search for files in
-    roots: ['<rootDir>/src'],
+    roots: ['<rootDir>/src', '<rootDir>/test'],
 
     // Allows you to use a custom runner instead of Jest's default test runner
     // runner: "jest-runner",
@@ -167,7 +167,7 @@ const config: Config.InitialOptions = {
     setupFiles: ['dotenv/config'],
 
     // A list of paths to modules that run some code to configure or set up the testing framework before each test
-    setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
+    setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
 
     // The number of seconds after which a test is considered as slow and reported as such in the results.
     // slowTestThreshold: 5,
@@ -185,7 +185,7 @@ const config: Config.InitialOptions = {
     // testLocationInResults: false,
 
     // The glob patterns Jest uses to detect test files
-    testMatch: ['**/__tests__/**/*.test.ts'],
+    testMatch: ['**/test/**/*.test.ts', '**/__tests__/**/*.test.ts'],
 
     // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
     // testPathIgnorePatterns: [

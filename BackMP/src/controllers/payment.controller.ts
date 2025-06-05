@@ -7,6 +7,9 @@ import { Payment } from '../models/payment.model';
 import { InvoiceService } from '../services/invoice.service';
 import { Between, IsNull } from 'typeorm';
 import { PaymentStatus } from '../types/payment.types';
+import { WebhookService, WebhookEvent } from '../services/webhook.service';
+import { RefundService } from '../services/refund.service';
+import { AuditService } from '../services/audit.service';
 
 // Extender el tipo Request para incluir user
 declare global {
@@ -33,6 +36,9 @@ export class PaymentController {
     private paymentService: PaymentService;
     private paymentRepository = AppDataSource.getRepository(Payment);
     private invoiceService = new InvoiceService();
+    private webhookService = new WebhookService();
+    private refundService = new RefundService();
+    private auditService = new AuditService();
 
     constructor() {
         console.log(
@@ -238,10 +244,13 @@ export class PaymentController {
     };
 
     async refundPayment(req: Request, res: Response) {
+        let amount: number | undefined;
+        let reason: string | undefined;
+
         try {
             console.log('💸 [PaymentController] refundPayment - Iniciando...');
             const { id } = req.params;
-            const { reason, amount } = req.body;
+            ({ reason, amount } = req.body);
 
             console.log('🆔 [PaymentController] Payment ID:', id);
             console.log('📊 [PaymentController] Refund data:', {
@@ -249,58 +258,70 @@ export class PaymentController {
                 amount,
             });
 
-            const payment = await this.paymentRepository.findOne({
-                where: { id },
+            // Registrar auditoría del intento
+            await this.auditService.logRefundOperation(
+                req,
+                id,
+                'refund_request',
+                true,
+                amount,
+                reason,
+            );
+
+            // Procesar reembolso real usando el servicio
+            const refundResponse = await this.refundService.processRefund({
+                paymentId: id,
+                amount,
+                reason,
+                metadata: {
+                    requestedBy: req.user?.id,
+                    requestIP: req.ip,
+                    requestTimestamp: new Date(),
+                },
             });
 
-            if (!payment) {
-                console.log('❌ [PaymentController] Pago no encontrado:', id);
-                return res.status(404).json({ message: 'Pago no encontrado' });
-            }
-
-            console.log('📋 [PaymentController] Pago encontrado:', payment);
-
-            if (payment.refund) {
-                console.log(
-                    '⚠️ [PaymentController] Este pago ya fue reembolsado:',
-                    payment.refund,
-                );
-                return res
-                    .status(400)
-                    .json({ message: 'Este pago ya fue reembolsado' });
-            }
-
             console.log(
-                '💰 [PaymentController] Procesando reembolso en MercadoPago...',
+                '✅ [PaymentController] Reembolso procesado correctamente:',
+                refundResponse,
             );
-            // Realizar reembolso en MercadoPago
-            // ... lógica de reembolso con MercadoPago ...
 
-            payment.refund = {
-                status: 'completed',
+            // Registrar auditoría del éxito
+            await this.auditService.logRefundOperation(
+                req,
+                id,
+                'refund_completed',
+                true,
+                refundResponse.amount,
                 reason,
-                amount: amount || payment.amount,
-                date: new Date(),
-            };
-
-            console.log(
-                '💾 [PaymentController] Guardando información del reembolso:',
-                payment.refund,
             );
-            await this.paymentRepository.save(payment);
 
-            console.log(
-                '✅ [PaymentController] Reembolso procesado correctamente',
-            );
-            return res.json({ message: 'Reembolso procesado correctamente' });
+            return res.json({
+                message: 'Reembolso procesado correctamente',
+                refund: refundResponse,
+            });
         } catch (error) {
             console.error(
                 '❌ [PaymentController] Error al procesar reembolso:',
                 error,
             );
-            return res
-                .status(500)
-                .json({ message: 'Error al procesar reembolso' });
+
+            // Registrar auditoría del fallo
+            await this.auditService.logRefundOperation(
+                req,
+                req.params.id,
+                'refund_failed',
+                false,
+                amount,
+                reason,
+            );
+
+            return res.status(500).json({
+                message: 'Error al procesar reembolso',
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : 'Error desconocido',
+            });
         }
     }
 
@@ -312,32 +333,45 @@ export class PaymentController {
             const { id } = req.params;
             console.log('🆔 [PaymentController] Payment ID:', id);
 
-            const payment = await this.paymentRepository.findOne({
-                where: { id },
-            });
+            // Registrar acceso a información de reembolso
+            await this.auditService.logRefundOperation(
+                req,
+                id,
+                'refund_status_access',
+                true,
+            );
 
-            if (!payment) {
-                console.log('❌ [PaymentController] Pago no encontrado:', id);
-                return res.status(404).json({ message: 'Pago no encontrado' });
-            }
+            const refundStatus = await this.refundService.getRefundStatus(id);
 
             console.log(
-                '📋 [PaymentController] Pago encontrado, estado del reembolso:',
-                payment.refund?.status || 'no_refund',
+                '📋 [PaymentController] Estado del reembolso obtenido:',
+                refundStatus.status,
             );
 
             return res.json({
-                refundStatus: payment.refund?.status || 'no_refund',
-                refundDetails: payment.refund,
+                refundStatus: refundStatus.status,
+                refundDetails: refundStatus,
             });
         } catch (error) {
             console.error(
                 '❌ [PaymentController] Error al obtener estado del reembolso:',
                 error,
             );
-            return res
-                .status(500)
-                .json({ message: 'Error al obtener estado del reembolso' });
+
+            await this.auditService.logRefundOperation(
+                req,
+                req.params.id,
+                'refund_status_error',
+                false,
+            );
+
+            return res.status(500).json({
+                message: 'Error al obtener estado del reembolso',
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : 'Error desconocido',
+            });
         }
     }
 
@@ -509,23 +543,76 @@ export class PaymentController {
     handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
         try {
             console.log('🎣 [PaymentController] handleWebhook - Iniciando...');
-            console.log('📊 [PaymentController] Webhook body:', req.body);
-            console.log('🔍 [PaymentController] Headers:', req.headers);
+            console.log('📊 [PaymentController] Webhook headers recibidos');
 
-            // Aquí iría la lógica para procesar el webhook
-            // Por ejemplo, validar la firma, procesar el evento, etc.
+            // Obtener firma y timestamp de headers
+            const signature = req.headers['x-signature'] as string;
+            const timestamp = req.headers['x-request-id'] as string;
+
+            console.log(
+                '🔍 [PaymentController] Validando firma de Mercado Pago...',
+            );
+
+            // Validar firma solo si está disponible (permitir desarrollo sin validación)
+            if (
+                signature &&
+                !this.webhookService.validateSignature(
+                    req.body,
+                    signature,
+                    timestamp,
+                )
+            ) {
+                console.error(
+                    '❌ [PaymentController] Firma de webhook inválida',
+                );
+                return res.status(401).json({
+                    error: 'Firma inválida',
+                    message: 'Webhook signature validation failed',
+                });
+            }
+
+            // Validar formato del evento
+            const event: WebhookEvent = req.body;
+            if (!event.type || !event.data?.id) {
+                console.error(
+                    '❌ [PaymentController] Formato de evento inválido:',
+                    event,
+                );
+                return res.status(400).json({
+                    error: 'Formato inválido',
+                    message: 'Invalid webhook event format',
+                });
+            }
+
+            console.log(
+                `📨 [PaymentController] Procesando evento: ${event.type}`,
+            );
+            console.log(`🆔 [PaymentController] Data ID: ${event.data.id}`);
+
+            // Procesar el evento usando el servicio especializado
+            await this.webhookService.processWebhookEvent(event);
 
             console.log(
                 '✅ [PaymentController] Webhook procesado correctamente',
             );
-            res.status(200).json({ message: 'Webhook procesado' });
+            res.status(200).json({
+                message: 'Webhook procesado correctamente',
+                eventType: event.type,
+                dataId: event.data.id,
+            });
         } catch (error) {
             console.error(
                 '❌ [PaymentController] Error processing webhook:',
                 error,
             );
             logger.error('Error processing webhook:', error);
-            next(error);
+
+            // Devolver 500 para que MP reintente el webhook
+            // cSpell:ignore reintente (Spanish word meaning "retry")
+            res.status(500).json({
+                error: 'Error interno',
+                message: 'Error processing webhook - will retry',
+            });
         }
     };
 }

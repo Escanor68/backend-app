@@ -47,6 +47,19 @@ __decorate([
     __metadata("design:type", String)
 ], Payment.prototype, "mercadoPagoId", void 0);
 __decorate([
+    (0, typeorm_1.Column)('uuid', { nullable: true }),
+    __metadata("design:type", String)
+], Payment.prototype, "userId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)('User', { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'userId' }),
+    __metadata("design:type", Object)
+], Payment.prototype, "user", void 0);
+__decorate([
+    (0, typeorm_1.Column)('json', { nullable: true }),
+    __metadata("design:type", Object)
+], Payment.prototype, "metadata", void 0);
+__decorate([
     (0, typeorm_1.Column)('json', { nullable: true }),
     __metadata("design:type", Object)
 ], Payment.prototype, "refund", void 0);
