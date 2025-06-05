@@ -1,133 +1,77 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '../config';
+import { AuthService } from '../services/auth.service';
+import { ApiError } from '../utils/api-error';
+import { HttpStatus } from '../utils/http-status';
 
 // Extender el tipo Request para incluir user
-declare global {
-    namespace Express {
-        interface Request {
-            user?: {
-                id: string;
-                email: string;
-                roles: string[];
-            };
-        }
+declare module 'express' {
+    interface Request {
+        user?: {
+            id: string;
+            email: string;
+            roles: string[];
+        };
     }
 }
 
-export const authenticate = () => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        try {
-            console.log('🔐 [Auth] authenticate - Iniciando autenticación...');
+export const authMiddleware = async (
+    req: Request,
+    _res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const authHeader = req.headers.authorization;
 
-            const authHeader = req.headers.authorization;
-            console.log(
-                '🎫 [Auth] Authorization header presente:',
-                !!authHeader,
-            );
-
-            if (!authHeader) {
-                console.log(
-                    '❌ [Auth] No se proporcionó token de autorización',
-                );
-                return res.status(401).json({
-                    message: 'Token de autorización requerido',
-                });
-            }
-
-            const token = authHeader.split(' ')[1]; // Bearer TOKEN
-            if (!token) {
-                console.log('❌ [Auth] Formato de token inválido');
-                return res.status(401).json({
-                    message: 'Formato de token inválido',
-                });
-            }
-
-            console.log(
-                '🎫 [Auth] Token extraído (primeros 20 caracteres):',
-                token.substring(0, 20) + '...',
-            );
-
-            // Verificar token JWT
-            const decoded = jwt.verify(token, config.jwt.secret) as any;
-            console.log('✅ [Auth] Token JWT válido');
-            console.log('👤 [Auth] Usuario decodificado:', {
-                id: decoded.id,
-                email: decoded.email,
-                roles: decoded.roles,
-            });
-
-            // Agregar usuario al request
-            req.user = {
-                id: decoded.id,
-                email: decoded.email,
-                roles: decoded.roles || ['user'],
-            };
-
-            console.log('✅ [Auth] Usuario autenticado correctamente');
-            next();
-        } catch (error) {
-            console.error('❌ [Auth] Error en autenticación:', error);
-
-            if (error instanceof jwt.JsonWebTokenError) {
-                console.log('🔐 [Auth] Token JWT inválido');
-                return res.status(401).json({
-                    message: 'Token inválido',
-                });
-            }
-
-            if (error instanceof jwt.TokenExpiredError) {
-                console.log('⏰ [Auth] Token JWT expirado');
-                return res.status(401).json({
-                    message: 'Token expirado',
-                });
-            }
-
-            console.log('💥 [Auth] Error interno en autenticación');
-            return res.status(500).json({
-                message: 'Error interno del servidor',
-            });
+        if (!authHeader) {
+            throw new ApiError('No se proporcionó token de autenticación', HttpStatus.UNAUTHORIZED);
         }
-    };
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            throw new ApiError('Formato de token inválido', HttpStatus.UNAUTHORIZED);
+        }
+
+        const authService = new AuthService();
+        const user = await authService.validateToken(token);
+
+        req.user = {
+            id: user.id,
+            email: user.email,
+            roles: user.roles,
+        };
+
+        next();
+    } catch (error) {
+        if (error instanceof ApiError) {
+            next(error);
+            return;
+        }
+        next(new ApiError('Error de autenticación', HttpStatus.UNAUTHORIZED));
+    }
 };
 
-export const requireRole = (requiredRole: string) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+export const roleMiddleware = (roles: string[]) => {
+    return (req: Request, _res: Response, next: NextFunction): void => {
         try {
-            console.log(
-                '🔍 [Auth] requireRole - Verificando rol:',
-                requiredRole,
-            );
-
             if (!req.user) {
-                console.log(
-                    '❌ [Auth] Usuario no autenticado en verificación de rol',
-                );
-                return res.status(401).json({
-                    message: 'Usuario no autenticado',
-                });
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
 
-            console.log('👤 [Auth] Roles del usuario:', req.user.roles);
-
-            if (!req.user.roles.includes(requiredRole)) {
-                console.log(
-                    `❌ [Auth] Usuario no tiene el rol requerido: ${requiredRole}`,
+            const hasRole = roles.some(role => req.user?.roles.includes(role));
+            if (!hasRole) {
+                throw new ApiError(
+                    'No tiene permisos para acceder a este recurso',
+                    HttpStatus.FORBIDDEN
                 );
-                return res.status(403).json({
-                    message: 'Permisos insuficientes',
-                });
             }
 
-            console.log(
-                `✅ [Auth] Usuario tiene el rol requerido: ${requiredRole}`,
-            );
             next();
         } catch (error) {
-            console.error('❌ [Auth] Error en verificación de rol:', error);
-            return res.status(500).json({
-                message: 'Error interno del servidor',
-            });
+            if (error instanceof ApiError) {
+                next(error);
+                return;
+            }
+            next(new ApiError('Error de autorización', HttpStatus.FORBIDDEN));
         }
     };
 };
