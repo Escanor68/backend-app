@@ -1,22 +1,30 @@
 # Dependencies
 node_modules/
-
-# Environment
-.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Build
 dist/
 build/
 
-# Logs
-*.log
-
-# Test reports
-test-report.html
+# Environment
+.env
+.env.local
+.env.*.local
 
 # IDE
-.vscode/
 .idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
 
 # OS
 .DS_Store

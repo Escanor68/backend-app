@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
 interface CustomError extends Error {
     status?: number;
@@ -6,12 +6,7 @@ interface CustomError extends Error {
     code?: string;
 }
 
-export const errorHandler = (
-    error: CustomError,
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const errorHandler = (error: CustomError, req: Request, res: Response) => {
     console.error('❌ [ErrorHandler] Error interceptado:', error);
     console.error('❌ [ErrorHandler] Stack trace:', error.stack);
     console.error('❌ [ErrorHandler] Request path:', req.path);
@@ -55,9 +50,7 @@ export const errorHandler = (
     // Error de base de datos
     if (error.code === '23505') {
         // Duplicate key error
-        console.log(
-            '📦 [ErrorHandler] Error de clave duplicada en base de datos',
-        );
+        console.log('📦 [ErrorHandler] Error de clave duplicada en base de datos');
         return res.status(409).json({
             status: 'error',
             code: 409,

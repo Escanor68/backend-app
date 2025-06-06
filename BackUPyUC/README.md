@@ -1,77 +1,137 @@
-# BackUPyUC
+# BackUPyUC - Microservicio de Gestión de Usuarios
 
-Backend para aplicación de gestión de UPyUC.
+Este microservicio se encarga de la gestión de usuarios, incluyendo autenticación, autorización, recuperación de contraseña y auditoría de acciones.
+
+## Características
+
+- Registro y autenticación de usuarios
+- Gestión de roles y permisos
+- Recuperación de contraseña
+- Auditoría de acciones
+- Validación de datos
+- Seguridad mejorada
+- Documentación de API
 
 ## Requisitos
 
-- Node.js (v16 o superior)
-- MySQL/MariaDB
+- Node.js >= 14
+- PostgreSQL >= 12
+- npm o yarn
 
 ## Instalación
 
 1. Clonar el repositorio:
+
 ```bash
-git clone https://github.com/Escanor68/backend-app.git
-cd backend-app/BackUPyUC
+git clone https://github.com/your-username/backupyuc.git
+cd backupyuc
 ```
 
 2. Instalar dependencias:
+
 ```bash
 npm install
 ```
 
 3. Configurar variables de entorno:
+
 ```bash
-cp .env.sample .env
+cp .env.example .env
 # Editar .env con tus configuraciones
 ```
 
-## Scripts Disponibles
+4. Iniciar la base de datos:
 
-- `npm start` - Inicia la aplicación en modo producción
-- `npm run dev` - Inicia la aplicación en modo desarrollo con hot-reload
-- `npm run dev:dist` - Inicia la aplicación en modo desarrollo desde la distribución
-- `npm test` - Ejecuta las pruebas
-- `npm run build` - Compila el proyecto
-- `npm run lint` - Ejecuta el linter
-- `npm run format` - Formatea el código
+```bash
+# Asegúrate de tener PostgreSQL corriendo
+```
 
-## Características
+5. Ejecutar migraciones:
 
-- Autenticación JWT
-- Validación de datos con Joi
-- Base de datos MySQL con TypeORM
-- Documentación API con Swagger
-- Tests con Jest
-- Socket.IO para comunicación en tiempo real
-- Envío de emails con Nodemailer
-- Docker support
-- Rate limiting para protección contra ataques
-- Compresión de respuestas
-- Manejo de CORS configurable
-- Health check endpoints
+```bash
+npm run migration:run
+```
+
+## Desarrollo
+
+```bash
+# Iniciar en modo desarrollo
+npm run dev
+
+# Ejecutar tests
+npm test
+
+# Linting
+npm run lint
+```
+
+## Producción
+
+```bash
+# Construir
+npm run build
+
+# Iniciar
+npm start
+```
 
 ## Estructura del Proyecto
 
 ```
 src/
-├── api/         # Controladores y rutas de la API
-├── core/        # Lógica de negocio y modelos
-├── infrastructure/  # Configuración de infraestructura
-├── middleware/  # Middlewares de Express
-├── routes/      # Definición de rutas
-└── test/        # Tests
+├── api/
+│   ├── controllers/
+│   ├── services/
+│   └── repositories/
+├── config/
+├── core/
+│   ├── constants/
+│   ├── errors/
+│   └── interfaces/
+├── middleware/
+├── models/
+├── routes/
+├── utils/
+├── app.ts
+└── server.ts
 ```
+
+## API Endpoints
+
+### Usuarios
+
+- `POST /api/users/register` - Registro de usuario
+- `POST /api/users/login` - Inicio de sesión
+- `POST /api/users/password-reset` - Solicitar recuperación de contraseña
+- `PUT /api/users/password-reset/:token` - Restablecer contraseña
+- `GET /api/users/profile` - Obtener perfil de usuario
+- `PUT /api/users/profile` - Actualizar perfil
+- `PUT /api/users/password` - Cambiar contraseña
+
+### Administración
+
+- `GET /api/users` - Listar usuarios (admin)
+- `PUT /api/users/:id/block` - Bloquear usuario (admin)
+- `PUT /api/users/:id/role` - Actualizar rol (admin)
 
 ## Seguridad
 
-- Protección contra ataques DoS con rate limiting
-- Headers de seguridad con Helmet
-- Validación de datos en todas las rutas
-- Sanitización de entradas
-- CORS configurable
-- Límites en tamaño de payload
+- Autenticación JWT
+- Bcrypt para hash de contraseñas
+- Rate limiting
+- CORS configurado
+- Helmet para headers de seguridad
+- Validación de datos
+- Auditoría de acciones
+
+## Contribución
+
+1. Fork el repositorio
+2. Crear una rama para tu feature (`git checkout -b feature/amazing-feature`)
+3. Commit tus cambios (`git commit -m 'Add some amazing feature'`)
+4. Push a la rama (`git push origin feature/amazing-feature`)
+5. Abrir un Pull Request
 
 ## Licencia
 
-ISC - Ver [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.

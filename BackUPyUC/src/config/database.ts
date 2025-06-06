@@ -1,12 +1,12 @@
 import { DataSource } from 'typeorm';
-import { config } from './index';
+import config from './index';
 
 console.log('📦 [Database] Configurando conexión a base de datos...');
 
 // Crear la configuración de la base de datos con casting seguro
 const dbConfig = config.database;
 
-export const AppDataSource = new DataSource(dbConfig);
+export const AppDataSource = new DataSource(config.database);
 
 export const setupDatabase = async (): Promise<void> => {
     try {
@@ -22,9 +22,7 @@ export const setupDatabase = async (): Promise<void> => {
 
         await AppDataSource.initialize();
 
-        console.log(
-            '✅ [Database] Conexión a base de datos establecida exitosamente',
-        );
+        console.log('✅ [Database] Conexión a base de datos establecida exitosamente');
         console.log('📊 [Database] Estado de la conexión:', {
             isInitialized: AppDataSource.isInitialized,
             options: {
@@ -40,18 +38,13 @@ export const setupDatabase = async (): Promise<void> => {
             console.log('📋 [Database] Verificando migraciones pendientes...');
             const pendingMigrations = await AppDataSource.showMigrations();
             if (pendingMigrations) {
-                console.log(
-                    '⚠️ [Database] Hay migraciones pendientes que deben ejecutarse',
-                );
+                console.log('⚠️ [Database] Hay migraciones pendientes que deben ejecutarse');
             } else {
                 console.log('✅ [Database] Base de datos actualizada');
             }
         }
     } catch (error) {
-        console.error(
-            '❌ [Database] Error al conectar con la base de datos:',
-            error,
-        );
+        console.error('❌ [Database] Error al conectar con la base de datos:', error);
         console.error('❌ [Database] Stack trace:', (error as Error).stack);
 
         // Información adicional para debugging

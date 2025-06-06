@@ -1,13 +1,15 @@
 import cors from 'cors';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
-import { join } from 'path';
+import csrf from 'csurf';
+import winston from 'winston';
+import { startServer } from './server';
 
 dotenv.config();
 console.log('🚀 [BackUPyUC] Iniciando aplicación de usuarios...');
@@ -16,6 +18,17 @@ import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
 import { setupDatabase } from './config/database';
+import userRoutes from './routes/user.routes';
+import authRoutes from './routes/auth.routes';
+
+// Extender la interfaz Request de Express para incluir csrfToken
+declare global {
+    namespace Express {
+        interface Request {
+            csrfToken(): string;
+        }
+    }
+}
 
 const app = express();
 const server = createServer(app);
@@ -27,10 +40,7 @@ const io = new Server(server, {
         methods: ['GET', 'POST'],
     },
 });
-console.log(
-    '🔌 [BackUPyUC] Socket.IO configurado - Origin:',
-    process.env.CORS_ORIGIN || '*',
-);
+console.log('🔌 [BackUPyUC] Socket.IO configurado - Origin:', process.env.CORS_ORIGIN || '*');
 
 // Rate limiting
 const limiter = rateLimit({
@@ -41,7 +51,7 @@ console.log(
     '🚦 [BackUPyUC] Rate limiting configurado - Window:',
     Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     'ms, Max requests:',
-    Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
 );
 
 // Middleware
@@ -53,12 +63,9 @@ app.use(
         origin: process.env.CORS_ORIGIN || '*',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
-    }),
+    })
 );
-console.log(
-    '🌐 [BackUPyUC] CORS configurado - Origin:',
-    process.env.CORS_ORIGIN || '*',
-);
+console.log('🌐 [BackUPyUC] CORS configurado - Origin:', process.env.CORS_ORIGIN || '*');
 
 app.use(helmet());
 console.log('🛡️ [BackUPyUC] Helmet (seguridad) aplicado');
@@ -72,18 +79,27 @@ console.log('📄 [BackUPyUC] JSON parser configurado con límite de 10mb');
 app.use(express.urlencoded({ extended: false }));
 console.log('📝 [BackUPyUC] URL encoded parser configurado');
 
-// Middleware de logging para todas las requests
-app.use((req, res, next) => {
-    console.log(
-        `📡 [BackUPyUC] ${req.method} ${req.path} - IP: ${req.ip} - User-Agent: ${req.get('User-Agent')?.substring(0, 50)}...`,
-    );
-    console.log(`🔍 [BackUPyUC] Request headers:`, req.headers);
-    if (req.body && Object.keys(req.body).length > 0) {
-        console.log(`🔍 [BackUPyUC] Request body:`, req.body);
-    }
-    if (req.query && Object.keys(req.query).length > 0) {
-        console.log(`🔍 [BackUPyUC] Request query:`, req.query);
-    }
+// Configuración de Winston para logging estructurado
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    transports: [
+        new winston.transports.Console(),
+        // Puedes agregar aquí un archivo o transporte externo
+    ],
+});
+
+// Middleware de logging usando Winston
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+    logger.info({
+        message: 'Request recibida',
+        method: _req.method,
+        path: _req.path,
+        ip: _req.ip,
+        userAgent: _req.get('User-Agent'),
+        body: _req.body,
+        query: _req.query,
+    });
     next();
 });
 
@@ -97,7 +113,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     console.log('❤️ [BackUPyUC] Health check solicitado');
     res.status(200).json({
         status: 'OK',
@@ -110,9 +126,11 @@ app.get('/health', (req, res) => {
 const apiPrefix = process.env.API_PREFIX || '/api';
 const apiVersion = process.env.API_VERSION || 'v1';
 app.use(`${apiPrefix}/${apiVersion}`, routes);
-console.log(
-    `🛣️ [BackUPyUC] Rutas API configuradas en ${apiPrefix}/${apiVersion}`,
-);
+console.log(`🛣️ [BackUPyUC] Rutas API configuradas en ${apiPrefix}/${apiVersion}`);
+
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error Handling
 app.use(notFoundHandler);
@@ -121,17 +139,33 @@ console.log('🔍 [BackUPyUC] Middleware 404 configurado');
 app.use(errorHandler);
 console.log('⚠️ [BackUPyUC] Middleware de manejo de errores configurado');
 
+// Protección CSRF (excepto en rutas públicas y GET)
+app.use(
+    csrf({
+        cookie: false,
+        ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
+    })
+);
+
+// Para exponer el token CSRF en las respuestas (opcional)
+app.use((_req, res, next) => {
+    if (_req.csrfToken) {
+        res.locals.csrfToken = _req.csrfToken();
+    }
+    next();
+});
+
 // Socket.IO events
-io.on('connection', (socket) => {
+io.on('connection', (socket: Socket) => {
     console.log(`🔌 [BackUPyUC] Cliente conectado - Socket ID: ${socket.id}`);
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason: string) => {
         console.log(
-            `🔌 [BackUPyUC] Cliente desconectado - Socket ID: ${socket.id}, Razón: ${reason}`,
+            `🔌 [BackUPyUC] Cliente desconectado - Socket ID: ${socket.id}, Razón: ${reason}`
         );
     });
 
-    socket.on('error', (error) => {
+    socket.on('error', (error: Error) => {
         console.error(`🔌 [BackUPyUC] Error en socket ${socket.id}:`, error);
     });
 });
@@ -157,25 +191,17 @@ process.on('SIGINT', () => {
 console.log('🔄 [BackUPyUC] Iniciando conexión a base de datos...');
 setupDatabase()
     .then(() => {
-        console.log(
-            '📦 [BackUPyUC] ✅ Base de datos inicializada correctamente',
-        );
+        console.log('📦 [BackUPyUC] ✅ Base de datos inicializada correctamente');
 
         const PORT = process.env.PORT || 3000;
         server.listen(PORT, () => {
             console.log('=================================');
             console.log(`🚀 [BackUPyUC] ✅ Server running on port ${PORT}`);
-            console.log(
-                `🔧 [BackUPyUC] Environment: ${process.env.NODE_ENV || 'development'}`,
-            );
+            console.log(`🔧 [BackUPyUC] Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🌐 [BackUPyUC] URL: http://localhost:${PORT}`);
-            console.log(
-                `❤️ [BackUPyUC] Health check: http://localhost:${PORT}/health`,
-            );
+            console.log(`❤️ [BackUPyUC] Health check: http://localhost:${PORT}/health`);
             if (process.env.NODE_ENV !== 'production') {
-                console.log(
-                    `📚 [BackUPyUC] API Documentation: http://localhost:${PORT}/api-docs`,
-                );
+                console.log(`📚 [BackUPyUC] API Documentation: http://localhost:${PORT}/api-docs`);
             }
             console.log('=================================');
         });
@@ -185,6 +211,12 @@ setupDatabase()
         console.error('❌ [BackUPyUC] Stack trace:', error.stack);
         process.exit(1);
     });
+
+// Iniciar el servidor
+startServer().catch(error => {
+    console.error('Error al iniciar la aplicación:', error);
+    process.exit(1);
+});
 
 export default app;
 export { io };

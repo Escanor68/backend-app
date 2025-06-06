@@ -20,9 +20,26 @@ export const JWT = {
 };
 
 export const ROLES = {
-    USER: 'user',
     ADMIN: 'admin',
-    MODERATOR: 'moderator',
+    MANAGER: 'manager',
+    USER: 'user',
+} as const;
+
+export const RESOURCES = {
+    USER: 'user',
+    FIELD: 'field',
+    BOOKING: 'booking',
+    PAYMENT: 'payment',
+} as const;
+
+export const ACTIONS = {
+    CREATE: 'create',
+    READ: 'read',
+    UPDATE: 'update',
+    DELETE: 'delete',
+    LOGIN: 'login',
+    LOGOUT: 'logout',
+    RESET_PASSWORD: 'reset_password',
 } as const;
 
 export const PAGINATION = {
@@ -34,7 +51,7 @@ export const PAGINATION = {
 export const VALIDATION = {
     PASSWORD_MIN_LENGTH: 8,
     EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    PHONE_REGEX: /^\+?[\d\s\-\(\)]+$/,
+    PHONE_REGEX: /^\+?[\d\s\-()]+$/,
 };
 
 export const CACHE = {
@@ -47,7 +64,8 @@ export const RATE_LIMIT = {
     MAX_REQUESTS: 100,
 };
 
+export const PASSWORD_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 console.log('📋 [Constants] Constantes del sistema cargadas');
-console.log(
-    '🔧 [Constants] HTTP Status codes, JWT config, roles, etc. disponibles',
-);
+console.log('🔧 [Constants] HTTP Status codes, JWT config, roles, etc. disponibles');

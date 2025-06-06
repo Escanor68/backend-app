@@ -1,0 +1,23 @@
+name: CD
+
+on:
+    push:
+        branches: [main]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Deploy to production
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USERNAME }}
+                  key: ${{ secrets.SSH_KEY }}
+                  script: |
+                      cd /opt/backupyuc
+                      docker-compose pull
+                      docker-compose up -d

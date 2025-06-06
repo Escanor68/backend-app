@@ -1,6 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+    Entity,
+    Column,
+    PrimaryGeneratedColumn,
+    OneToMany,
+    CreateDateColumn,
+    UpdateDateColumn,
+} from 'typeorm';
 import { FavoriteField } from './favorite-field.model';
 import { Notification } from './notification.model';
+import { PasswordResetToken } from './password-reset-token.model';
 
 @Entity('users')
 export class User {
@@ -44,9 +52,12 @@ export class User {
     @OneToMany(() => Notification, notification => notification.user)
     notifications: Notification[];
 
+    @OneToMany(() => PasswordResetToken, prt => prt.user)
+    passwordResetTokens: PasswordResetToken[];
+
     @CreateDateColumn()
     createdAt: Date;
 
     @UpdateDateColumn()
     updatedAt: Date;
-} 
+}

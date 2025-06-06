@@ -1,6 +1,7 @@
 import { RefundService } from '../../../src/services/refund.service';
 import { AppDataSource } from '../../../src/config/database';
 import { Payment } from '../../../src/models/payment.model';
+import { z } from 'zod';
 
 jest.mock('../../../src/config/database', () => ({
     AppDataSource: {
@@ -425,3 +426,11 @@ describe('RefundService', () => {
         });
     });
 });
+
+const UserDTO = z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    name: z.string().min(2),
+});
+
+type UserDTOType = z.infer<typeof UserDTO>;

@@ -1,43 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { HttpStatus } from '../core/constants';
-import { ApiError } from '../core/errors/api.error';
-import { config } from '../config';
-
-export interface AuthRequest extends Request {
-    user?: any;
-}
+import { AuthService } from '../api/services/auth.service';
+import { ApiError } from '../api/utils/api-error';
+import { HttpStatus } from '../api/utils/http-status';
 
 export const authMiddleware = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction,
+    req: Request,
+    _res: Response,
+    next: NextFunction
 ): Promise<void> => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader) {
-            throw new ApiError('No token provided', HttpStatus.UNAUTHORIZED);
+            throw new ApiError('No se proporcionó token de autenticación', HttpStatus.UNAUTHORIZED);
         }
 
-        const [bearer, token] = authHeader.split(' ');
-        if (bearer !== 'Bearer' || !token) {
-            throw new ApiError('Invalid token format', HttpStatus.UNAUTHORIZED);
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            throw new ApiError('Formato de token inválido', HttpStatus.UNAUTHORIZED);
         }
 
-        try {
-            const decoded = jwt.verify(token, config.jwt.secret) as any;
-            req.user = decoded;
-            next();
-        } catch (error) {
-            throw new ApiError('Invalid token', HttpStatus.UNAUTHORIZED);
-        }
+        const authService = new AuthService();
+        const user = await authService.validateToken(token);
+
+        req.user = {
+            id: user.id,
+            email: user.email,
+            roles: user.roles,
+        };
+
+        next();
     } catch (error) {
         if (error instanceof ApiError) {
-            res.status(error.status).json({ message: error.message });
+            next(error);
         } else {
-            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-                message: 'Internal server error',
-            });
+            next(new ApiError('Error de autenticación', HttpStatus.UNAUTHORIZED));
         }
     }
 };
