@@ -23,7 +23,7 @@ export class UserService {
         });
 
         if (existingUser) {
-            throw new ApiError('El email ya está registrado', HttpStatus.CONFLICT);
+            throw new ApiError(HttpStatus.CONFLICT, 'El email ya está registrado');
         }
 
         const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -43,7 +43,7 @@ export class UserService {
         });
 
         if (!user) {
-            throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Usuario no encontrado');
         }
 
         return user;
@@ -82,7 +82,7 @@ export class UserService {
     async changePassword(id: number, data: ChangePasswordDto): Promise<void> {
         const user = await this.getUserById(id);
         if (!(await user.comparePassword(data.currentPassword))) {
-            throw new ApiError('Contraseña actual incorrecta', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Contraseña actual incorrecta');
         }
         user.password = data.newPassword;
         await this.userRepository.save(user);
@@ -139,11 +139,11 @@ export class UserService {
         });
 
         if (!resetToken) {
-            throw new ApiError('Token de recuperación inválido', HttpStatus.BAD_REQUEST);
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Token de recuperación inválido');
         }
 
         if (resetToken.expiresAt < new Date()) {
-            throw new ApiError('Token de recuperación expirado', HttpStatus.BAD_REQUEST);
+            throw new ApiError(HttpStatus.BAD_REQUEST, 'Token de recuperación expirado');
         }
 
         // Actualizar contraseña
@@ -171,7 +171,7 @@ export class UserService {
         });
 
         if (existingFavorite) {
-            throw new ApiError('El campo ya está en favoritos', HttpStatus.CONFLICT);
+            throw new ApiError(HttpStatus.CONFLICT, 'El campo ya está en favoritos');
         }
 
         const favoriteField = this.favoriteFieldRepository.create({
@@ -190,7 +190,7 @@ export class UserService {
         });
 
         if (!favoriteField) {
-            throw new ApiError('El campo no está en favoritos', HttpStatus.NOT_FOUND);
+            throw new ApiError(HttpStatus.NOT_FOUND, 'El campo no está en favoritos');
         }
 
         await this.favoriteFieldRepository.remove(favoriteField);
@@ -208,11 +208,11 @@ export class UserService {
         const user = await this.getUserById(userId);
 
         const notification = await this.notificationRepository.findOne({
-            where: { id: notificationId, userId: user.id },
+            where: { userId: user.id, id: notificationId },
         });
 
         if (!notification) {
-            throw new ApiError('Notificación no encontrada', HttpStatus.NOT_FOUND);
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Notificación no encontrada');
         }
 
         notification.isRead = true;

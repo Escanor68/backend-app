@@ -1,6 +1,7 @@
 import { FavoriteFieldController } from '../../api/controllers/favorite-field.controller';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../../utils/http-status';
+import { UserRole } from '../../types/user.types';
 
 // Mock del módulo de base de datos
 jest.mock('../../config/database', () => ({
@@ -24,7 +25,14 @@ describe('FavoriteFieldController', () => {
         controller = new FavoriteFieldController();
         statusMock = jest.fn().mockReturnThis();
         jsonMock = jest.fn();
-        req = { body: {}, user: { id: '1', email: 'test@example.com', roles: ['user'] } };
+        req = {
+            body: {},
+            user: {
+                id: 1,
+                email: 'test@example.com',
+                roles: [UserRole.USER],
+            },
+        };
         res = { status: statusMock, json: jsonMock } as unknown as Response;
     });
 
@@ -34,11 +42,11 @@ describe('FavoriteFieldController', () => {
 
     describe('addFavoriteField', () => {
         it('debe devolver 201 y el campo favorito agregado', async () => {
-            const mockFavoriteField = { id: '1', userId: '1', fieldId: '1' };
+            const mockFavoriteField = { id: 1, userId: 1, fieldId: 1 };
             controller['favoriteFieldService'] = {
                 addFavoriteField: jest.fn().mockResolvedValue(mockFavoriteField),
             } as any;
-            req.body = { fieldId: '1' };
+            req.body = { fieldId: 1 };
             await controller.addFavoriteField(req as Request, res as Response);
             expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
             expect(jsonMock).toHaveBeenCalledWith(mockFavoriteField);
@@ -46,7 +54,7 @@ describe('FavoriteFieldController', () => {
 
         it('debe devolver 401 si el usuario no está autenticado', async () => {
             req.user = undefined;
-            req.body = { fieldId: '1' };
+            req.body = { fieldId: 1 };
             await controller.addFavoriteField(req as Request, res as Response);
             expect(statusMock).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
             expect(jsonMock).toHaveBeenCalledWith({ message: 'Usuario no autenticado' });

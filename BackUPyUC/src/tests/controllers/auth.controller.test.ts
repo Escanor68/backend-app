@@ -2,6 +2,7 @@ import { AuthController } from '../../api/controllers/auth.controller';
 import { Request, Response } from 'express';
 import { ApiError } from '../../utils/api-error';
 import { HttpStatus } from '../../utils/http-status';
+import { UserRole } from '../../types/user.types';
 
 // Mock del módulo de base de datos
 jest.mock('../../config/database', () => ({
@@ -48,7 +49,14 @@ describe('AuthController', () => {
         controller = new AuthController();
         statusMock = jest.fn().mockReturnThis();
         jsonMock = jest.fn();
-        req = { body: {} };
+        req = {
+            body: {},
+            user: {
+                id: 1,
+                email: 'test@example.com',
+                roles: [UserRole.USER],
+            },
+        };
         res = { status: statusMock, json: jsonMock } as unknown as Response;
     });
 
@@ -57,77 +65,143 @@ describe('AuthController', () => {
     });
 
     describe('login', () => {
-        it('debe devolver 200 y el usuario/tokens si el login es exitoso', async () => {
-            const mockResult = {
-                user: {
-                    id: '1',
-                    name: 'Test User',
-                    email: 'test@example.com',
-                    roles: ['user'],
-                },
-                tokens: {
-                    accessToken: 'access',
-                    refreshToken: 'refresh',
-                },
+        it('debe devolver un token JWT al iniciar sesión correctamente', async () => {
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                roles: [UserRole.USER],
             };
-            controller['authService'] = { login: jest.fn().mockResolvedValue(mockResult) } as any;
+            const mockToken = 'mock.jwt.token';
+
+            controller['authService'] = {
+                login: jest.fn().mockResolvedValue({ user: mockUser, token: mockToken }),
+            } as any;
+
             req.body = { email: 'test@example.com', password: 'password123' };
+
             await controller.login(req as Request, res as Response);
-            expect(jsonMock).toHaveBeenCalledWith(mockResult);
+
+            expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(jsonMock).toHaveBeenCalledWith({
+                user: mockUser,
+                token: mockToken,
+            });
         });
 
-        it('debe manejar errores de autenticación', async () => {
+        it('debe devolver 401 si las credenciales son inválidas', async () => {
             controller['authService'] = {
-                login: jest
-                    .fn()
-                    .mockRejectedValue(
-                        new ApiError('Credenciales inválidas', HttpStatus.UNAUTHORIZED)
-                    ),
+                login: jest.fn().mockRejectedValue(new Error('Credenciales inválidas')),
             } as any;
-            req.body = { email: 'test@example.com', password: 'wrong' };
+
+            req.body = { email: 'test@example.com', password: 'wrongpassword' };
+
             await controller.login(req as Request, res as Response);
+
             expect(statusMock).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
-            expect(jsonMock).toHaveBeenCalledWith({ message: 'Credenciales inválidas' });
+            expect(jsonMock).toHaveBeenCalledWith({
+                message: 'Credenciales inválidas',
+            });
         });
     });
 
     describe('register', () => {
-        it('debe devolver 201 y el usuario si el registro es exitoso', async () => {
+        it('debe registrar un nuevo usuario correctamente', async () => {
             const mockUser = {
-                id: '1',
-                name: 'Test User',
-                email: 'test@example.com',
-                roles: ['user'],
+                id: 1,
+                email: 'new@example.com',
+                roles: [UserRole.USER],
             };
-            controller['userService'] = {
-                createUser: jest.fn().mockResolvedValue(mockUser),
+
+            controller['authService'] = {
+                register: jest.fn().mockResolvedValue(mockUser),
             } as any;
-            req.body = { name: 'Test User', email: 'test@example.com', password: 'password123' };
+
+            req.body = {
+                email: 'new@example.com',
+                password: 'password123',
+                firstName: 'John',
+                lastName: 'Doe',
+            };
+
             await controller.register(req as Request, res as Response);
+
             expect(statusMock).toHaveBeenCalledWith(HttpStatus.CREATED);
+            expect(jsonMock).toHaveBeenCalledWith(mockUser);
+        });
+
+        it('debe devolver 400 si el email ya está registrado', async () => {
+            controller['authService'] = {
+                register: jest.fn().mockRejectedValue(new Error('El email ya está registrado')),
+            } as any;
+
+            req.body = {
+                email: 'existing@example.com',
+                password: 'password123',
+                firstName: 'John',
+                lastName: 'Doe',
+            };
+
+            await controller.register(req as Request, res as Response);
+
+            expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
             expect(jsonMock).toHaveBeenCalledWith({
-                message: 'Usuario registrado exitosamente',
-                user: {
-                    id: mockUser.id,
-                    email: mockUser.email,
-                    name: mockUser.name,
-                    roles: mockUser.roles,
-                },
+                message: 'El email ya está registrado',
+            });
+        });
+    });
+
+    describe('forgotPassword', () => {
+        it('debe enviar un email de recuperación', async () => {
+            controller['authService'] = {
+                forgotPassword: jest.fn().mockResolvedValue(undefined),
+            } as any;
+
+            req.body = { email: 'test@example.com' };
+
+            await controller.forgotPassword(req as Request, res as Response);
+
+            expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(jsonMock).toHaveBeenCalledWith({
+                message: 'Se ha enviado un email con instrucciones para recuperar la contraseña',
+            });
+        });
+    });
+
+    describe('resetPassword', () => {
+        it('debe restablecer la contraseña correctamente', async () => {
+            controller['authService'] = {
+                resetPassword: jest.fn().mockResolvedValue(undefined),
+            } as any;
+
+            req.body = {
+                token: 'valid-token',
+                password: 'password123',
+            };
+
+            await controller.resetPassword(req as Request, res as Response);
+
+            expect(statusMock).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(jsonMock).toHaveBeenCalledWith({
+                message: 'Contraseña restablecida correctamente',
             });
         });
 
-        it('debe manejar errores de email duplicado', async () => {
-            controller['userService'] = {
-                createUser: jest
-                    .fn()
-                    .mockRejectedValue(
-                        new ApiError('El email ya está registrado', HttpStatus.CONFLICT)
-                    ),
+        it('debe devolver 400 si el token es inválido', async () => {
+            controller['authService'] = {
+                resetPassword: jest.fn().mockRejectedValue(new Error('Token inválido')),
             } as any;
-            req.body = { name: 'Test User', email: 'test@example.com', password: 'password123' };
-            await controller.register(req as Request, res as Response);
-            expect(statusMock).toHaveBeenCalledWith(HttpStatus.CONFLICT);
-            expect(jsonMock).toHaveBeenCalledWith({ message: 'El email ya está registrado' });
+
+            req.body = {
+                token: 'invalid-token',
+                password: 'password123',
+            };
+
+            await controller.resetPassword(req as Request, res as Response);
+
+            expect(statusMock).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+            expect(jsonMock).toHaveBeenCalledWith({
+                message: 'Token inválido',
+            });
         });
     });
 });

@@ -4,14 +4,14 @@ import { AppDataSource } from '../../config/database';
 export class NotificationService {
     private notificationRepository = AppDataSource.getRepository(Notification);
 
-    async getNotificationsByUserId(userId: string): Promise<Notification[]> {
+    async getNotificationsByUserId(userId: number): Promise<Notification[]> {
         return this.notificationRepository.find({
             where: { userId },
             order: { createdAt: 'DESC' },
         });
     }
 
-    async markAsRead(id: string, userId: string): Promise<boolean> {
+    async markAsRead(id: number, userId: number): Promise<boolean> {
         const notification = await this.notificationRepository.findOne({
             where: { id, userId },
         });

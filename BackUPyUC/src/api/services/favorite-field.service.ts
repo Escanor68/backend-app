@@ -1,17 +1,17 @@
 import { FavoriteField } from '../../models/favorite-field.model';
 import { AppDataSource } from '../../config/database';
-import { ApiError } from '../utils/api-error';
-import { HttpStatus } from '../utils/http-status';
+import { ApiError } from '../../utils/api-error';
+import { HttpStatus } from '../../utils/http-status';
 
 export class FavoriteFieldService {
     private favoriteFieldRepository = AppDataSource.getRepository(FavoriteField);
 
-    async addFavoriteField(userId: string, fieldId: string): Promise<FavoriteField> {
+    async addFavoriteField(userId: number, fieldId: number): Promise<FavoriteField> {
         const existingFavorite = await this.favoriteFieldRepository.findOne({
             where: { userId, fieldId },
         });
         if (existingFavorite) {
-            throw new ApiError('El campo ya está en favoritos', HttpStatus.CONFLICT);
+            throw new ApiError(HttpStatus.CONFLICT, 'El campo ya está en favoritos');
         }
         const favoriteField = new FavoriteField();
         favoriteField.userId = userId;
@@ -19,7 +19,7 @@ export class FavoriteFieldService {
         return this.favoriteFieldRepository.save(favoriteField);
     }
 
-    async removeFavoriteField(userId: string, fieldId: string): Promise<boolean> {
+    async removeFavoriteField(userId: number, fieldId: number): Promise<boolean> {
         const result = await this.favoriteFieldRepository.delete({ userId, fieldId });
         return result.affected ? result.affected > 0 : false;
     }

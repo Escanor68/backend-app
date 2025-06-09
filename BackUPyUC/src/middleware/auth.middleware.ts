@@ -21,12 +21,12 @@ export const authMiddleware = async (
         const authHeader = req.headers.authorization;
 
         if (!authHeader) {
-            throw new ApiError('No se proporcionó token de autenticación', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'No se proporcionó token de autenticación');
         }
 
         const token = authHeader.split(' ')[1];
         if (!token) {
-            throw new ApiError('Formato de token inválido', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Formato de token inválido');
         }
 
         try {
@@ -44,7 +44,7 @@ export const authMiddleware = async (
 
             next();
         } catch (error) {
-            throw new ApiError('Token inválido o expirado', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido o expirado');
         }
     } catch (error) {
         next(error);

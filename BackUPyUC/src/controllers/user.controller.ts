@@ -53,7 +53,7 @@ export class UserController {
     async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const user = await this.userService.getUserById(Number(req.user.id));
             res.json(user);
@@ -71,7 +71,7 @@ export class UserController {
     async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const updateData: UpdateUserDto = req.body;
             const user = await this.userService.updateUser(Number(req.user.id), updateData);
@@ -90,7 +90,7 @@ export class UserController {
     async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             await this.userService.changePassword(Number(req.user.id), req.body);
             res.status(HttpStatus.OK).json({ message: 'Contraseña actualizada exitosamente' });
@@ -142,7 +142,7 @@ export class UserController {
     async getFavoriteFields(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const fields = await this.userService.getFavoriteFields(Number(req.user.id));
             res.json(fields);
@@ -160,7 +160,7 @@ export class UserController {
     async addFavoriteField(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const { fieldId } = req.body;
             const favoriteField: FavoriteFieldDto = {
@@ -186,7 +186,7 @@ export class UserController {
     async removeFavoriteField(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const { fieldId } = req.params;
             await this.userService.removeFavoriteField(Number(req.user.id), Number(fieldId));
@@ -205,7 +205,7 @@ export class UserController {
     async getNotifications(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const notifications = await this.userService.getNotifications(Number(req.user.id));
             res.json(notifications);
@@ -223,7 +223,7 @@ export class UserController {
     async markNotificationAsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const { id } = req.params;
             await this.userService.markNotificationAsRead(Number(req.user.id), Number(id));
@@ -242,7 +242,7 @@ export class UserController {
     async getAllUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const users = await this.userService.getAllUsers();
             res.json(users);
@@ -260,10 +260,13 @@ export class UserController {
     async getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const { id } = req.params;
-            const user = await this.userService.getUserById(Number(id));
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
+            }
+            const user = await this.userService.getUserById(id);
             res.json(user);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -279,11 +282,17 @@ export class UserController {
     async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const { id } = req.params;
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
+            }
             const updateData: UpdateUserDto = req.body;
-            const user = await this.userService.updateUser(Number(id), updateData);
+            const user = await this.userService.updateUser(id, updateData);
+            if (!user) {
+                throw new ApiError(HttpStatus.NOT_FOUND, 'Usuario no encontrado');
+            }
             res.json(user);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -299,11 +308,14 @@ export class UserController {
     async deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const { id } = req.params;
-            await this.userService.deleteUser(Number(id));
-            res.status(HttpStatus.OK).json({ message: 'Usuario eliminado exitosamente' });
+            const id = parseInt(req.params.id);
+            if (isNaN(id)) {
+                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
+            }
+            await this.userService.deleteUser(id);
+            res.status(HttpStatus.NO_CONTENT).send();
         } catch (error: unknown) {
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({ message: error.message });

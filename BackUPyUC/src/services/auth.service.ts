@@ -21,16 +21,16 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new ApiError('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Credenciales inválidas');
         }
 
         if (user.isBlocked) {
-            throw new ApiError('Usuario bloqueado', HttpStatus.FORBIDDEN);
+            throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
         }
 
         const isPasswordValid = await bcrypt.compare(loginData.password, user.password);
         if (!isPasswordValid) {
-            throw new ApiError('Credenciales inválidas', HttpStatus.UNAUTHORIZED);
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Credenciales inválidas');
         }
 
         const tokens = this.generateTokens(user);
@@ -43,7 +43,7 @@ export class AuthService {
         });
 
         if (existingUser) {
-            throw new ApiError('El email ya está registrado', HttpStatus.CONFLICT);
+            throw new ApiError(HttpStatus.CONFLICT, 'El email ya está registrado');
         }
 
         const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -69,11 +69,11 @@ export class AuthService {
             });
 
             if (!user) {
-                throw new ApiError('Usuario no encontrado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no encontrado');
             }
 
             if (user.isBlocked) {
-                throw new ApiError('Usuario bloqueado', HttpStatus.FORBIDDEN);
+                throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
             }
 
             return {
@@ -83,7 +83,7 @@ export class AuthService {
             };
         } catch (error) {
             if (error instanceof jwt.JsonWebTokenError) {
-                throw new ApiError('Token inválido', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido');
             }
             throw error;
         }
@@ -98,11 +98,11 @@ export class AuthService {
             });
 
             if (!user) {
-                throw new ApiError('Usuario no encontrado', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no encontrado');
             }
 
             if (user.isBlocked) {
-                throw new ApiError('Usuario bloqueado', HttpStatus.FORBIDDEN);
+                throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
             }
 
             const tokens = this.generateTokens(user);
@@ -127,7 +127,7 @@ export class AuthService {
             };
         } catch (error) {
             if (error instanceof jwt.JsonWebTokenError) {
-                throw new ApiError('Token inválido', HttpStatus.UNAUTHORIZED);
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido');
             }
             throw error;
         }

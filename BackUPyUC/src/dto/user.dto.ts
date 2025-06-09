@@ -10,8 +10,10 @@ import {
     IsLatitude,
     IsLongitude,
     IsNumber,
+    IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { UserRole } from '../types/user.types';
 
 export class LocationDto {
     @IsNumber()
@@ -49,8 +51,8 @@ export class CreateUserDto {
 
     @IsOptional()
     @IsArray()
-    @IsString({ each: true })
-    roles?: string[];
+    @IsEnum(UserRole, { each: true })
+    roles?: UserRole[];
 
     @IsOptional()
     @IsObject()
@@ -80,7 +82,8 @@ export class UpdateUserDto {
 
     @IsArray()
     @IsOptional()
-    roles?: string[];
+    @IsEnum(UserRole, { each: true })
+    roles?: UserRole[];
 
     @IsOptional()
     @IsObject()
