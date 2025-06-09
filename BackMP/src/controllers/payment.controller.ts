@@ -10,6 +10,7 @@ import { PaymentStatus } from '../types/payment.types';
 import { WebhookService, WebhookEvent } from '../services/webhook.service';
 import { RefundService } from '../services/refund.service';
 import { AuditService } from '../services/audit.service';
+import { MercadoPagoService } from '../services/mercado-pago.service';
 
 // Extender el tipo Request para incluir user
 declare global {
@@ -44,7 +45,10 @@ export class PaymentController {
         console.log(
             '🏗️ [PaymentController] Inicializando PaymentController...',
         );
-        this.paymentService = new PaymentService();
+        this.paymentService = new PaymentService(
+            AppDataSource,
+            new MercadoPagoService(),
+        );
         console.log(
             '✅ [PaymentController] PaymentController inicializado correctamente',
         );
@@ -62,15 +66,13 @@ export class PaymentController {
             console.log('📊 [PaymentController] Request body:', req.body);
             console.log('👤 [PaymentController] Usuario:', req.user);
 
-            const preference = await this.paymentService.createPreference(
-                req.body,
-            );
+            const result = await this.paymentService.createPayment(req.body);
 
             console.log(
                 '✅ [PaymentController] Preferencia de pago creada:',
-                preference,
+                result,
             );
-            res.status(201).json(preference);
+            res.status(201).json(result);
         } catch (error) {
             console.error(
                 '❌ [PaymentController] Error creating payment preference:',
@@ -90,20 +92,19 @@ export class PaymentController {
             console.log('⚡ [PaymentController] processPayment - Iniciando...');
             console.log('📊 [PaymentController] Request body:', req.body);
 
-            const payment = await this.paymentService.processPayment(req.body);
+            const payment = await this.paymentService.processPayment(
+                req.body.paymentId,
+            );
             console.log('💰 [PaymentController] Pago procesado:', payment);
 
-            // Emitir evento de actualización de estado - Corregir el tipo
+            // Emitir evento de actualización de estado
             console.log(
                 '📡 [PaymentController] Emitiendo evento de actualización de estado:',
                 payment.id,
                 payment.status,
             );
 
-            // Convertir payment.id a string si es necesario y asegurar que payment.status sea string
-            const paymentId = String(payment.id);
-            const paymentStatus = String(payment.status);
-            paymentEvents.emitPaymentStatusUpdate(paymentId, paymentStatus);
+            paymentEvents.emitPaymentStatusUpdate(payment.id, payment.status);
 
             res.status(200).json(payment);
         } catch (error) {
@@ -136,17 +137,12 @@ export class PaymentController {
                 status,
             );
 
-            // Emitir evento de actualización de estado - Corregir el tipo
+            // Emitir evento de actualización de estado
             console.log(
                 '📡 [PaymentController] Emitiendo evento de actualización de estado',
             );
 
-            // Extraer el string status del objeto PaymentStatus
-            const statusString =
-                typeof status === 'object' && status !== null
-                    ? status.status
-                    : String(status);
-            paymentEvents.emitPaymentStatusUpdate(req.params.id, statusString);
+            paymentEvents.emitPaymentStatusUpdate(req.params.id, status);
 
             res.status(200).json(status);
         } catch (error) {
@@ -214,32 +210,34 @@ export class PaymentController {
         }
     };
 
-    requestRefund = async (req: Request, res: Response, next: NextFunction) => {
+    requestRefund = async (req: Request, res: Response) => {
         try {
-            console.log('🔄 [PaymentController] requestRefund - Iniciando...');
-            console.log('🆔 [PaymentController] Payment ID:', req.params.id);
-            console.log('📊 [PaymentController] Request body:', req.body);
+            const { paymentId } = req.params;
+            const { reason } = req.body;
+
+            if (!reason) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requiere una razón para el reembolso',
+                });
+            }
 
             const refund = await this.paymentService.requestRefund(
-                req.params.id,
+                paymentId,
+                reason,
             );
 
-            console.log('✅ [PaymentController] Reembolso solicitado:', refund);
-
-            // Emitir evento de actualización de reembolso
-            console.log(
-                '📡 [PaymentController] Emitiendo evento de actualización de reembolso',
-            );
-            paymentEvents.emitRefundUpdate(req.params.id, refund.status);
-
-            res.status(200).json(refund);
+            res.json({
+                success: true,
+                data: refund,
+            });
         } catch (error) {
-            console.error(
-                '❌ [PaymentController] Error requesting refund:',
-                error,
-            );
-            logger.error('Error requesting refund:', error);
-            next(error);
+            console.error('Error requesting refund:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al solicitar el reembolso',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
         }
     };
 
@@ -540,78 +538,120 @@ export class PaymentController {
     }
 
     // Método para manejar webhooks (referenciado en las rutas)
-    handleWebhook = async (req: Request, res: Response, next: NextFunction) => {
+    handleWebhook = async (req: Request, res: Response) => {
         try {
-            console.log('🎣 [PaymentController] handleWebhook - Iniciando...');
-            console.log('📊 [PaymentController] Webhook headers recibidos');
+            const event = req.body as WebhookEvent;
+            await this.webhookService.handleWebhook(event);
+            res.status(200).json({ success: true });
+        } catch (error) {
+            console.error('Error handling webhook:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error procesando webhook',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    };
 
-            // Obtener firma y timestamp de headers
-            const signature = req.headers['x-signature'] as string;
-            const timestamp = req.headers['x-request-id'] as string;
+    createPayment = async (req: Request, res: Response) => {
+        try {
+            const { amount, field, booking, userId, userEmail, userName } =
+                req.body;
 
-            console.log(
-                '🔍 [PaymentController] Validando firma de Mercado Pago...',
-            );
-
-            // Validar firma solo si está disponible (permitir desarrollo sin validación)
-            if (
-                signature &&
-                !this.webhookService.validateSignature(
-                    req.body,
-                    signature,
-                    timestamp,
-                )
-            ) {
-                console.error(
-                    '❌ [PaymentController] Firma de webhook inválida',
-                );
-                return res.status(401).json({
-                    error: 'Firma inválida',
-                    message: 'Webhook signature validation failed',
-                });
-            }
-
-            // Validar formato del evento
-            const event: WebhookEvent = req.body;
-            if (!event.type || !event.data?.id) {
-                console.error(
-                    '❌ [PaymentController] Formato de evento inválido:',
-                    event,
-                );
+            if (!amount || !field || !booking || !userId) {
                 return res.status(400).json({
-                    error: 'Formato inválido',
-                    message: 'Invalid webhook event format',
+                    success: false,
+                    message: 'Faltan datos requeridos',
                 });
             }
 
-            console.log(
-                `📨 [PaymentController] Procesando evento: ${event.type}`,
-            );
-            console.log(`🆔 [PaymentController] Data ID: ${event.data.id}`);
+            const result = await this.paymentService.createPayment({
+                amount,
+                field,
+                booking,
+                userId,
+                userEmail,
+                userName,
+            });
 
-            // Procesar el evento usando el servicio especializado
-            await this.webhookService.processWebhookEvent(event);
-
-            console.log(
-                '✅ [PaymentController] Webhook procesado correctamente',
-            );
-            res.status(200).json({
-                message: 'Webhook procesado correctamente',
-                eventType: event.type,
-                dataId: event.data.id,
+            res.json({
+                success: true,
+                data: result,
             });
         } catch (error) {
-            console.error(
-                '❌ [PaymentController] Error processing webhook:',
-                error,
-            );
-            logger.error('Error processing webhook:', error);
-
-            // Devolver 500 para que MP reintente el webhook
-            // cSpell:ignore reintente (Spanish word meaning "retry")
+            console.error('Error creating payment:', error);
             res.status(500).json({
-                error: 'Error interno',
-                message: 'Error processing webhook - will retry',
+                success: false,
+                message: 'Error al crear el pago',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    };
+
+    getPaymentById = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            const payment = await this.paymentService.getPaymentById(id);
+
+            if (!payment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Pago no encontrado',
+                });
+            }
+
+            res.json({
+                success: true,
+                data: payment,
+            });
+        } catch (error) {
+            console.error('Error getting payment:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener el pago',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    };
+
+    getPaymentsByUserId = async (req: Request, res: Response) => {
+        try {
+            const { userId } = req.params;
+            const payments = await this.paymentService.getPaymentsByUserId(
+                userId,
+            );
+
+            res.json({
+                success: true,
+                data: payments,
+            });
+        } catch (error) {
+            console.error('Error getting payments:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener los pagos',
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    };
+
+    getPaymentsByFieldId = async (req: Request, res: Response) => {
+        try {
+            const { fieldId } = req.params;
+            const payments = await this.paymentService.getPaymentsByFieldId(
+                fieldId,
+            );
+
+            res.json({
+                success: true,
+                data: payments,
+            });
+        } catch (error) {
+            console.error('Error getting payments:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener los pagos',
+                error: error instanceof Error ? error.message : 'Unknown error',
             });
         }
     };

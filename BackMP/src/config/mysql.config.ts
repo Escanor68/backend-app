@@ -11,15 +11,10 @@ export const mysqlConfig: DataSourceOptions = {
     username: process.env.DB_USERNAME || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'backmp',
-    synchronize: process.env.NODE_ENV !== 'production',
-    logging: process.env.NODE_ENV === 'development',
-    entities: ['src/models/**/*.model.ts'],
-    // Configuraciones específicas de MySQL
+    charset: 'utf8mb4',
     extra: {
         charset: 'utf8mb4',
     },
-    // Configuración para caracteres Unicode
-    charset: 'utf8mb4',
 };
 
 // Configuración completa incluyendo MySQL

@@ -1,34 +1,49 @@
-export interface PaymentPreferenceData {
-    items: Array<{
-        title: string;
-        quantity: number;
-        currency_id: string;
-        unit_price: number;
-    }>;
-    payer: {
-        email: string;
-    };
+export enum PaymentStatus {
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+    CANCELLED = 'cancelled',
+    REFUNDED = 'refunded',
+    EXPIRED = 'expired',
 }
 
-export interface PaymentWebhookData {
-    payment_id: string;
-    status: string;
-    external_reference: string;
-    preference_id: string;
-}
-
-export interface PaymentStatus {
+export interface RefundHistory {
     id: string;
     status: string;
-    detail: string;
-    preferenceId?: string;
-    mercadoPagoId?: string;
-}
-
-export interface RefundResult {
-    id: string;
-    payment_id: string;
+    reason: string;
     amount: number;
-    status: string;
-    date_created: string;
+    date: Date;
+    mercadoPagoRefundId?: string;
+    metadata?: any;
+}
+
+export interface PaymentExtension {
+    id: string;
+    requestedAt: Date;
+    grantedAt?: Date;
+    expiresAt: Date;
+    reason?: string;
+    grantedBy?: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface PaymentMetadata {
+    transactionId?: string;
+    paymentMethodId?: string;
+    paymentTypeId?: string;
+    statusDetail?: string;
+    externalReference?: string;
+    description?: string;
+    lastWebhookUpdate?: Date;
+    reservationConfirmed?: boolean;
+    reservationReleased?: boolean;
+    confirmedAt?: Date;
+    releasedAt?: Date;
+    paymentInfo?: any;
+    userEmail?: string;
+    userName?: string;
+    lastRefundUpdate?: Date;
+    refundHistory?: RefundHistory[];
+    expiredAt?: Date;
+    extensions?: PaymentExtension[];
 }

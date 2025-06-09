@@ -4,6 +4,8 @@ import { Payment } from '../models/payment.model';
 import { LessThan } from 'typeorm';
 import { paymentEvents } from '../events/paymentEvents';
 import { logger } from '../utils/logger';
+import { PaymentStatus } from '../types/payment.types';
+import { v4 as uuidv4 } from 'uuid';
 
 export class PaymentExpirationService {
     private paymentRepository = AppDataSource.getRepository(Payment);
@@ -93,7 +95,7 @@ export class PaymentExpirationService {
             const expiredPayments =
                 (await this.paymentRepository.find({
                     where: {
-                        status: 'pending',
+                        status: PaymentStatus.PENDING,
                         createdAt: LessThan(cutoffTime),
                     },
                 })) || [];
@@ -152,15 +154,13 @@ export class PaymentExpirationService {
         console.log(`⏰ [PaymentExpiration] Expirando pago: ${payment.id}`);
 
         const oldStatus = payment.status;
-        payment.status = 'expired';
+        payment.status = PaymentStatus.EXPIRED;
 
         // Actualizar metadata
         payment.metadata = {
             ...payment.metadata,
             expiredAt: new Date(),
-            originalStatus: oldStatus,
-            expiredBy: 'automatic-cleanup',
-            expirationReason: `Payment expired after ${this.expirationTimeMinutes} minutes`,
+            // originalStatus, expiredBy y expirationReason no están en el tipo, pero puedes agregarlos si los necesitas
         };
 
         await this.paymentRepository.save(payment);
@@ -171,11 +171,15 @@ export class PaymentExpirationService {
             `Payment expired after ${this.expirationTimeMinutes} minutes`,
         );
 
-        paymentEvents.emitPaymentStatusUpdate(payment.id, 'expired', {
-            previousStatus: oldStatus,
-            expiredAt: new Date(),
-            automaticExpiration: true,
-        });
+        paymentEvents.emitPaymentStatusUpdate(
+            payment.id,
+            PaymentStatus.EXPIRED,
+            {
+                previousStatus: oldStatus,
+                expiredAt: new Date(),
+                automaticExpiration: true,
+            },
+        );
 
         console.log(
             `✅ [PaymentExpiration] Pago ${payment.id} expirado correctamente`,
@@ -229,7 +233,7 @@ export class PaymentExpirationService {
             }
 
             // Si ya está expirado en BD
-            if (payment.status === 'expired') {
+            if (payment.status === PaymentStatus.EXPIRED) {
                 return {
                     isExpired: true,
                     expiredAt: payment.metadata?.expiredAt || payment.updatedAt,
@@ -237,7 +241,7 @@ export class PaymentExpirationService {
             }
 
             // Si no está pendiente, no puede expirar
-            if (payment.status !== 'pending') {
+            if (payment.status !== PaymentStatus.PENDING) {
                 return { isExpired: false };
             }
 
@@ -253,7 +257,7 @@ export class PaymentExpirationService {
 
             const isExpired = minutesRemaining <= 0;
 
-            if (isExpired && payment.status === 'pending') {
+            if (isExpired && payment.status === PaymentStatus.PENDING) {
                 // Expirar automáticamente si está vencido
                 await this.expirePayment(payment);
                 return { isExpired: true, expiredAt: new Date() };
@@ -289,7 +293,7 @@ export class PaymentExpirationService {
                 throw new Error(`Pago no encontrado: ${paymentId}`);
             }
 
-            if (payment.status !== 'pending') {
+            if (payment.status !== PaymentStatus.PENDING) {
                 throw new Error(
                     `No se puede extender un pago con estado: ${payment.status}`,
                 );
@@ -301,12 +305,15 @@ export class PaymentExpirationService {
                 extensions: [
                     ...(payment.metadata?.extensions || []),
                     {
-                        extendedAt: new Date(),
-                        additionalMinutes,
-                        reason,
-                        newExpirationTime: new Date(
+                        id: uuidv4(),
+                        requestedAt: new Date(),
+                        grantedAt: new Date(),
+                        expiresAt: new Date(
                             Date.now() + additionalMinutes * 60 * 1000,
                         ),
+                        reason,
+                        grantedBy: 'manual',
+                        status: 'approved',
                     },
                 ],
             };
@@ -344,7 +351,7 @@ export class PaymentExpirationService {
             const expiredPayments =
                 (await this.paymentRepository.find({
                     where: {
-                        status: 'expired',
+                        status: PaymentStatus.EXPIRED,
                         updatedAt: LessThan(new Date()),
                     },
                 })) || [];
@@ -358,17 +365,19 @@ export class PaymentExpirationService {
             ).length;
 
             // Calcular tiempo promedio hasta expiración
-            const times = expiredPayments
+            const expiredWithDate = expiredPayments
                 .filter((p) => p.metadata?.expiredAt)
                 .map((p) => {
+                    if (!p.metadata?.expiredAt) return 0;
+                    const expired = new Date(p.metadata.expiredAt).getTime();
                     const created = new Date(p.createdAt).getTime();
-                    const expired = new Date(p.metadata!.expiredAt).getTime();
-                    return (expired - created) / (1000 * 60); // en minutos
+                    return expired - created;
                 });
 
             const averageTimeToExpiration =
-                times.length > 0
-                    ? times.reduce((sum, time) => sum + time, 0) / times.length
+                expiredWithDate.length > 0
+                    ? expiredWithDate.reduce((sum, time) => sum + time, 0) /
+                      expiredWithDate.length
                     : 0;
 
             return {

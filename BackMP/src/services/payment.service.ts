@@ -1,202 +1,203 @@
-import { Preference, Payment as MPPayment } from 'mercadopago';
-import { config } from '../config';
-import { AppDataSource } from '../config/database';
+import { DataSource, Repository } from 'typeorm';
 import { Payment } from '../models/payment.model';
+import { logger } from '../utils/logger';
+import { MercadoPagoService } from './mercado-pago.service';
+import { PaymentStatus } from '../types/payment.types';
+import { paymentEvents } from '../events/paymentEvents';
+import { v4 as uuidv4 } from 'uuid';
+
+interface CreatePaymentDTO {
+    amount: number;
+    field: {
+        id: string;
+        name: string;
+        ownerId: string;
+        ownerName: string;
+        ownerEmail: string;
+        location: string;
+        price: number;
+    };
+    booking: {
+        id: string;
+        startTime: Date;
+        endTime: Date;
+    };
+    userId: string;
+    userEmail?: string;
+    userName?: string;
+}
 
 export class PaymentService {
-    private preference: Preference;
-    private mpPayment: MPPayment;
-    private paymentRepository = AppDataSource.getRepository(Payment);
+    private paymentRepository: Repository<Payment>;
+    private mercadoPagoService: MercadoPagoService;
 
-    constructor() {
-        console.log('🏗️ [PaymentService] Inicializando PaymentService...');
-
-        if (!config.mercadoPago.accessToken) {
-            throw new Error('Access token de Mercado Pago no configurado');
-        }
-
-        this.preference = new Preference({
-            accessToken: config.mercadoPago.accessToken,
-        });
-
-        this.mpPayment = new MPPayment({
-            accessToken: config.mercadoPago.accessToken,
-        });
-
-        console.log(
-            '✅ [PaymentService] PaymentService inicializado correctamente',
-        );
+    constructor(
+        private dataSource: DataSource,
+        mercadoPagoService: MercadoPagoService,
+    ) {
+        this.paymentRepository = dataSource.getRepository(Payment);
+        this.mercadoPagoService = mercadoPagoService;
     }
 
-    async createPreference(data: any): Promise<any> {
+    async createPayment(data: CreatePaymentDTO): Promise<Payment> {
         try {
-            console.log('💳 [PaymentService] Creando preferencia de pago...');
-            console.log('📊 [PaymentService] Datos recibidos:', data);
+            logger.info('Creando pago:', data);
 
-            const preferenceData: any = {
-                items: [
-                    {
-                        id: `booking-${data.bookingId || 'default'}`,
-                        title: data.title || 'Reserva de cancha',
-                        quantity: 1,
-                        currency_id: 'ARS',
-                        unit_price: data.amount || 100,
-                    },
-                ],
-                payer: data.payer || { email: 'default@example.com' },
-                back_urls: {
-                    success: `${config.cors.origin}/payment/success`,
-                    failure: `${config.cors.origin}/payment/failure`,
-                    pending: `${config.cors.origin}/payment/pending`,
+            const payment = this.paymentRepository.create({
+                amount: data.amount,
+                field: data.field,
+                booking: { id: data.booking.id },
+                user: { id: data.userId },
+                status: PaymentStatus.PENDING,
+                paymentMethod: 'mercadopago',
+                metadata: {
+                    userEmail: data.userEmail,
+                    userName: data.userName,
                 },
-                auto_return: 'approved',
-                notification_url: `${config.cors.origin}/api/payments/webhook`,
-            };
-
-            const result = await this.preference.create({
-                body: preferenceData,
             });
 
-            // Guardar el pago en la base de datos
-            const payment = this.paymentRepository.create({
-                amount: data.amount || 100,
-                status: 'pending',
-                paymentMethod: 'mercadopago',
-                bookingId: data.bookingId || '',
-                preferenceId: result.id,
-                field: {
-                    id: 'default',
-                    name: 'Cancha por defecto',
-                },
-                userId: 'default-user',
-            } as any);
+            const savedPayment = await this.paymentRepository.save(payment);
+            logger.info('Pago creado:', savedPayment);
 
-            await this.paymentRepository.save(payment);
-
-            console.log('✅ [PaymentService] Preferencia creada:', result.id);
-            return result;
+            return savedPayment;
         } catch (error) {
-            console.error(
-                '❌ [PaymentService] Error creando preferencia:',
-                error,
-            );
+            logger.error('Error creando pago:', error);
             throw error;
         }
     }
 
-    async processPayment(paymentData: any): Promise<Payment> {
+    async getPaymentById(id: string): Promise<Payment | null> {
         try {
-            console.log('⚡ [PaymentService] Procesando pago...');
-
-            const payment = await this.paymentRepository.findOne({
-                where: { preferenceId: paymentData.preference_id },
+            return await this.paymentRepository.findOne({
+                where: { id },
+                relations: ['field', 'booking', 'user'],
             });
+        } catch (error) {
+            logger.error('Error obteniendo pago:', error);
+            throw error;
+        }
+    }
 
-            if (payment) {
-                const paymentInfo = await this.mpPayment.get({
-                    id: paymentData.payment_id,
-                });
+    async getPaymentsByUserId(userId: string): Promise<Payment[]> {
+        try {
+            return await this.paymentRepository.find({
+                where: { user: { id: userId } },
+                relations: ['field', 'booking'],
+                order: { createdAt: 'DESC' },
+            });
+        } catch (error) {
+            logger.error('Error obteniendo pagos del usuario:', error);
+            throw error;
+        }
+    }
 
-                payment.status = paymentInfo.status || 'unknown';
-                payment.mercadoPagoId = String(paymentInfo.id) || '';
+    async getPaymentsByFieldId(fieldId: string): Promise<Payment[]> {
+        try {
+            return await this.paymentRepository.find({
+                where: { field: { id: fieldId } },
+                relations: ['user', 'booking'],
+                order: { createdAt: 'DESC' },
+            });
+        } catch (error) {
+            logger.error('Error obteniendo pagos del campo:', error);
+            throw error;
+        }
+    }
+
+    async processPayment(paymentId: string): Promise<Payment> {
+        try {
+            const payment = await this.getPaymentById(paymentId);
+            if (!payment) {
+                throw new Error('Pago no encontrado');
+            }
+
+            const paymentInfo = await this.mercadoPagoService.getPayment(
+                paymentId,
+            );
+            const newStatus = this.mapMercadoPagoStatus(paymentInfo.status);
+
+            if (newStatus !== payment.status) {
+                payment.status = newStatus;
                 payment.metadata = {
                     ...payment.metadata,
-                    paymentInfo,
-                    lastUpdate: new Date(),
+                    transactionId: paymentInfo.id,
+                    paymentMethodId: paymentInfo.payment_method_id,
+                    paymentTypeId: paymentInfo.payment_type_id,
+                    statusDetail: paymentInfo.status_detail,
+                    externalReference: paymentInfo.external_reference,
+                    description: paymentInfo.description,
                 };
 
-                await this.paymentRepository.save(payment);
-                console.log(
-                    '✅ [PaymentService] Pago actualizado:',
-                    payment.id,
+                const updatedPayment = await this.paymentRepository.save(
+                    payment,
                 );
-                return payment;
+                paymentEvents.emitPaymentStatusUpdate(paymentId, newStatus);
+                return updatedPayment;
             }
 
-            throw new Error('Pago no encontrado');
+            return payment;
         } catch (error) {
-            console.error('❌ [PaymentService] Error procesando pago:', error);
+            logger.error('Error procesando pago:', error);
             throw error;
         }
     }
 
-    async getPaymentStatus(paymentId: string): Promise<any> {
+    async getPaymentStatus(paymentId: string): Promise<PaymentStatus> {
         try {
-            console.log(
-                '🔍 [PaymentService] Obteniendo estado del pago:',
-                paymentId,
-            );
-
-            const payment = await this.paymentRepository.findOne({
-                where: { id: paymentId },
-            });
-
-            if (payment) {
-                if (payment.mercadoPagoId) {
-                    const paymentInfo = await this.mpPayment.get({
-                        id: payment.mercadoPagoId,
-                    });
-
-                    payment.status = paymentInfo.status || 'unknown';
-                    await this.paymentRepository.save(payment);
-                }
-
-                return {
-                    id: payment.id,
-                    status: payment.status || 'unknown',
-                    detail:
-                        payment.metadata?.statusDetail || 'Estado desconocido',
-                    preferenceId: payment.preferenceId,
-                };
+            const payment = await this.getPaymentById(paymentId);
+            if (!payment) {
+                throw new Error('Pago no encontrado');
             }
-
-            throw new Error('Pago no encontrado');
+            return payment.status;
         } catch (error) {
-            console.error(
-                '❌ [PaymentService] Error obteniendo estado:',
-                error,
-            );
+            logger.error('Error obteniendo estado del pago:', error);
             throw error;
         }
     }
 
-    async requestRefund(paymentId: string): Promise<any> {
+    async requestRefund(paymentId: string, reason: string): Promise<Payment> {
         try {
-            console.log(
-                '🔄 [PaymentService] Solicitando reembolso para:',
+            const payment = await this.getPaymentById(paymentId);
+            if (!payment) {
+                throw new Error('Pago no encontrado');
+            }
+
+            const refund = await this.mercadoPagoService.getRefund(paymentId);
+            payment.status = PaymentStatus.REFUNDED;
+            payment.metadata = {
+                ...payment.metadata,
+                transactionId: refund.id,
+                paymentMethodId: refund.payment_id,
+                paymentTypeId: refund.payment_id,
+                statusDetail: refund.status,
+                externalReference: refund.external_reference,
+                description: reason,
+            };
+
+            const updatedPayment = await this.paymentRepository.save(payment);
+            paymentEvents.emitPaymentStatusUpdate(
                 paymentId,
+                PaymentStatus.REFUNDED,
             );
-
-            const payment = await this.paymentRepository.findOne({
-                where: { id: paymentId },
-            });
-
-            if (!payment || !payment.mercadoPagoId) {
-                throw new Error('Pago no encontrado o sin ID de Mercado Pago');
-            }
-
-            // Por ahora, solo marcamos como reembolso solicitado
-            // La implementación real está en RefundService
-            if (!payment.refund) {
-                payment.refund = {
-                    id: '',
-                    status: 'pending',
-                    reason: 'Reembolso solicitado',
-                    amount: payment.amount,
-                    date: new Date(),
-                };
-            }
-
-            await this.paymentRepository.save(payment);
-
-            console.log('✅ [PaymentService] Reembolso solicitado');
-            return payment.refund;
+            return updatedPayment;
         } catch (error) {
-            console.error(
-                '❌ [PaymentService] Error solicitando reembolso:',
-                error,
-            );
+            logger.error('Error solicitando reembolso:', error);
             throw error;
+        }
+    }
+
+    private mapMercadoPagoStatus(status: string): PaymentStatus {
+        switch (status) {
+            case 'approved':
+                return PaymentStatus.APPROVED;
+            case 'rejected':
+                return PaymentStatus.REJECTED;
+            case 'cancelled':
+                return PaymentStatus.CANCELLED;
+            case 'refunded':
+                return PaymentStatus.REFUNDED;
+            default:
+                return PaymentStatus.PENDING;
         }
     }
 }
