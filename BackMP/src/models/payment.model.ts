@@ -7,13 +7,9 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
-
-// Interface para el User (en caso de que no esté definido)
-export interface User {
-    id: string;
-    email: string;
-    name?: string;
-}
+import { User } from './user.model';
+import { Booking } from './booking.model';
+import { PaymentStatus, PaymentMetadata } from '../types/payment.types';
 
 @Entity('payments')
 export class Payment {
@@ -26,8 +22,12 @@ export class Payment {
     @Column('decimal', { precision: 10, scale: 2 })
     amount: number;
 
-    @Column()
-    status: string;
+    @Column({
+        type: 'enum',
+        enum: PaymentStatus,
+        default: PaymentStatus.PENDING,
+    })
+    status: PaymentStatus;
 
     @Column({ name: 'payment_method' })
     paymentMethod: string;
@@ -36,7 +36,16 @@ export class Payment {
     field: {
         id: string;
         name: string;
+        ownerId: string;
+        ownerName: string;
+        ownerEmail: string;
+        location: string;
+        price: number;
     };
+
+    @ManyToOne(() => Booking)
+    @JoinColumn({ name: 'bookingId' })
+    booking: Booking;
 
     @Column({ nullable: true })
     preferenceId: string;
@@ -44,17 +53,18 @@ export class Payment {
     @Column({ nullable: true })
     mercadoPagoId: string;
 
-    // Agregar relación con usuario
     @Column('uuid', { nullable: true })
     userId: string;
 
-    @ManyToOne('User', { nullable: true })
+    @ManyToOne(() => User, { nullable: true })
     @JoinColumn({ name: 'userId' })
     user: User;
 
-    // Agregar campo metadata
     @Column('json', { nullable: true })
-    metadata: Record<string, any> | null;
+    metadata: PaymentMetadata;
+
+    @Column({ nullable: true })
+    externalId: string;
 
     @Column('json', { nullable: true })
     refund: {

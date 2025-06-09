@@ -46,7 +46,7 @@ export class User {
     };
 
     @Column({
-        type: 'jsonb',
+        type: 'json',
         nullable: true,
     })
     notificationPreferences!: {
