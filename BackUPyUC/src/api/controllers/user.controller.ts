@@ -27,7 +27,7 @@ export class UserController {
     async getUserById(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const user = await this.userService.getUserById(id);
+            const user = await this.userService.getUserById(Number(id));
             if (!user) {
                 throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
             }
@@ -46,7 +46,7 @@ export class UserController {
         try {
             const { id } = req.params;
             const userData = req.body;
-            const updatedUser = await this.userService.updateUser(id, userData);
+            const updatedUser = await this.userService.updateUser(Number(id), userData);
             if (!updatedUser) {
                 throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
             }
@@ -64,7 +64,7 @@ export class UserController {
     async deleteUser(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
-            const deleted = await this.userService.deleteUser(id);
+            const deleted = await this.userService.deleteUser(Number(id));
             if (!deleted) {
                 throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
             }

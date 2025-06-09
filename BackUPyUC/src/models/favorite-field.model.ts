@@ -11,22 +11,22 @@ import { User } from './user.model';
 
 @Entity()
 export class FavoriteField {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
     @Column()
-    userId: string;
+    userId!: number;
 
     @Column()
-    fieldId: string;
+    fieldId!: number;
 
     @ManyToOne(() => User, user => user.favoriteFields)
     @JoinColumn({ name: 'userId' })
-    user: User;
+    user!: User;
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
 }

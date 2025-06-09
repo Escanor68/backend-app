@@ -1,5 +1,11 @@
 import cors from 'cors';
-import express, { Request, Response, NextFunction } from 'express';
+import express, {
+    Request,
+    Response,
+    NextFunction,
+    ErrorRequestHandler,
+    RequestHandler,
+} from 'express';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
@@ -63,6 +69,7 @@ app.use(
         origin: process.env.CORS_ORIGIN || '*',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
     })
 );
 console.log('🌐 [BackUPyUC] CORS configurado - Origin:', process.env.CORS_ORIGIN || '*');
@@ -79,6 +86,32 @@ console.log('📄 [BackUPyUC] JSON parser configurado con límite de 10mb');
 app.use(express.urlencoded({ extended: false }));
 console.log('📝 [BackUPyUC] URL encoded parser configurado');
 
+// Protección CSRF (excepto en rutas públicas y GET)
+app.use(
+    csrf({
+        cookie: {
+            key: '_csrf',
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        },
+        ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
+    })
+);
+console.log('🛡️ [BackUPyUC] CSRF protection configurado');
+
+// Para exponer el token CSRF en las respuestas
+app.use((_req, res, next) => {
+    if (_req.csrfToken) {
+        res.cookie('XSRF-TOKEN', _req.csrfToken(), {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+        });
+    }
+    next();
+});
+
 // Configuración de Winston para logging estructurado
 const logger = winston.createLogger({
     level: 'info',
@@ -90,18 +123,15 @@ const logger = winston.createLogger({
 });
 
 // Middleware de logging usando Winston
-app.use((_req: Request, _res: Response, next: NextFunction) => {
+app.use(((req: Request, res: Response, next: NextFunction): void => {
     logger.info({
         message: 'Request recibida',
-        method: _req.method,
-        path: _req.path,
-        ip: _req.ip,
-        userAgent: _req.get('User-Agent'),
-        body: _req.body,
-        query: _req.query,
+        method: req.method,
+        path: req.path,
+        ip: req.ip,
     });
     next();
-});
+}) as RequestHandler);
 
 // API Documentation
 if (process.env.NODE_ENV !== 'production') {
@@ -132,28 +162,13 @@ console.log(`🛣️ [BackUPyUC] Rutas API configuradas en ${apiPrefix}/${apiVer
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-// Error Handling
-app.use(notFoundHandler);
+// Middleware 404 - Debe ir después de todas las rutas
+app.use(notFoundHandler as RequestHandler);
 console.log('🔍 [BackUPyUC] Middleware 404 configurado');
 
-app.use(errorHandler);
+// Middleware de manejo de errores - Debe ir al final
+app.use(errorHandler as ErrorRequestHandler);
 console.log('⚠️ [BackUPyUC] Middleware de manejo de errores configurado');
-
-// Protección CSRF (excepto en rutas públicas y GET)
-app.use(
-    csrf({
-        cookie: false,
-        ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
-    })
-);
-
-// Para exponer el token CSRF en las respuestas (opcional)
-app.use((_req, res, next) => {
-    if (_req.csrfToken) {
-        res.locals.csrfToken = _req.csrfToken();
-    }
-    next();
-});
 
 // Socket.IO events
 io.on('connection', (socket: Socket) => {

@@ -9,27 +9,27 @@ import {
 } from 'typeorm';
 import { User } from './user.model';
 
-@Entity()
+@Entity('notifications')
 export class Notification {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
     @Column()
-    userId: string;
+    userId!: number;
 
     @Column()
-    message: string;
+    message!: string;
 
     @Column({ default: false })
-    isRead: boolean;
+    isRead!: boolean;
 
     @ManyToOne(() => User, user => user.notifications)
     @JoinColumn({ name: 'userId' })
-    user: User;
+    user!: User;
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
 }

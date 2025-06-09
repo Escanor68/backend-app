@@ -5,14 +5,25 @@ dotenv.config();
 
 console.log('🔧 [MySQL Config] Configurando conexión MySQL...');
 
+if (
+    !process.env.DB_HOST ||
+    !process.env.DB_USERNAME ||
+    !process.env.DB_PASSWORD ||
+    !process.env.DB_NAME
+) {
+    throw new Error(
+        '❌ [MySQL Config] Faltan variables de entorno requeridas para la conexión a la base de datos'
+    );
+}
+
 // Configuración específica para MySQL con mysql2 (compatible con TypeORM)
 export const mysqlConfig: DataSourceOptions = {
     type: 'mysql',
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '3306'),
-    username: process.env.DB_USER || 'turnosya_user',
-    password: process.env.DB_PASSWORD || 'turnosya_password',
-    database: process.env.DB_NAME || 'backupyuc',
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
     synchronize: process.env.NODE_ENV !== 'production',
     logging: process.env.NODE_ENV === 'development',
     entities: ['src/models/**/*.model.ts'],
@@ -20,7 +31,7 @@ export const mysqlConfig: DataSourceOptions = {
     // Configuraciones específicas de MySQL
     extra: {
         charset: 'utf8mb4',
-        connectionLimit: 10,
+        connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT || '10'),
     },
     // Configuración para caracteres Unicode
     charset: 'utf8mb4',
@@ -46,10 +57,9 @@ export const configWithMySQL = {
 
     // Configuración de JWT
     jwt: {
-        secret: process.env.JWT_SECRET || 'tu-secreto-seguro-temporal',
+        secret: process.env.JWT_SECRET,
         expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-        refreshSecret:
-            process.env.JWT_REFRESH_SECRET || 'tu-refresh-secreto-temporal',
+        refreshSecret: process.env.JWT_REFRESH_SECRET,
         refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     },
 
@@ -72,7 +82,7 @@ export const configWithMySQL = {
 
     // Configuración de Rate Limiting
     rateLimit: {
-        windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 100, // límite de 100 solicitudes por ventana
+        windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
+        max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
     },
 };

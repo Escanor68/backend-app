@@ -2,15 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { ApiError } from '../utils/api-error';
 import { HttpStatus } from '../utils/http-status';
+import { AuthenticatedUser, UserRole } from '../types/user.types';
 
-// Extender el tipo Request para incluir user
-declare module 'express' {
-    interface Request {
-        user?: {
-            id: string;
-            email: string;
-            roles: string[];
-        };
+declare global {
+    namespace Express {
+        interface Request {
+            user?: AuthenticatedUser;
+        }
     }
 }
 
@@ -37,7 +35,7 @@ export const authMiddleware = async (
         req.user = {
             id: user.id,
             email: user.email,
-            roles: user.roles,
+            roles: user.roles.map(r => r as UserRole),
         };
 
         next();
@@ -57,7 +55,7 @@ export const roleMiddleware = (roles: string[]) => {
                 throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
 
-            const hasRole = roles.some(role => req.user?.roles.includes(role));
+            const hasRole = roles.some(role => req.user?.roles.includes(role as UserRole));
             if (!hasRole) {
                 throw new ApiError(
                     'No tiene permisos para acceder a este recurso',

@@ -5,30 +5,39 @@ import {
     OneToMany,
     CreateDateColumn,
     UpdateDateColumn,
+    BeforeInsert,
+    BeforeUpdate,
 } from 'typeorm';
 import { FavoriteField } from './favorite-field.model';
 import { Notification } from './notification.model';
 import { PasswordResetToken } from './password-reset-token.model';
+import * as bcrypt from 'bcrypt';
+import { UserRole } from '../types/user.types';
 
 @Entity('users')
 export class User {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+    @PrimaryGeneratedColumn()
+    id!: number;
 
     @Column()
-    name: string;
+    name!: string;
 
     @Column({ unique: true })
-    email: string;
+    email!: string;
 
     @Column()
-    password: string;
+    password!: string;
 
     @Column({ nullable: true })
     phone?: string;
 
-    @Column('simple-array', { default: ['user'] })
-    roles: string[];
+    @Column({
+        type: 'enum',
+        enum: UserRole,
+        array: true,
+        default: [UserRole.USER],
+    })
+    roles!: UserRole[];
 
     @Column('json', { nullable: true })
     preferredLocation?: {
@@ -36,28 +45,50 @@ export class User {
         lng: number;
     };
 
-    @Column('json', { default: { email: true, push: true, sms: false } })
-    notificationPreferences: {
+    @Column({
+        type: 'jsonb',
+        nullable: true,
+    })
+    notificationPreferences!: {
         email: boolean;
         push: boolean;
         sms: boolean;
     };
 
     @Column({ default: false })
-    isBlocked: boolean;
+    isBlocked!: boolean;
+
+    @Column({ nullable: true })
+    resetToken?: string;
+
+    @Column({ nullable: true })
+    resetTokenExpiry?: Date;
 
     @OneToMany(() => FavoriteField, favoriteField => favoriteField.user)
-    favoriteFields: FavoriteField[];
+    favoriteFields!: FavoriteField[];
 
     @OneToMany(() => Notification, notification => notification.user)
-    notifications: Notification[];
+    notifications!: Notification[];
 
     @OneToMany(() => PasswordResetToken, prt => prt.user)
-    passwordResetTokens: PasswordResetToken[];
+    passwordResetTokens!: PasswordResetToken[];
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    async hashPassword() {
+        if (this.password) {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+        }
+    }
+
+    async comparePassword(candidatePassword: string): Promise<boolean> {
+        return bcrypt.compare(candidatePassword, this.password);
+    }
 }

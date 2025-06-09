@@ -1,13 +1,15 @@
 import { AppDataSource } from '../../config/database';
 import { User } from '../../models/user.model';
-import { ApiError } from '../utils/api-error';
-import { HttpStatus } from '../utils/http-status';
+import { ApiError } from '../../core/errors/api.error';
+import { HttpStatus } from '../../core/constants';
 import bcrypt from 'bcrypt';
+import { RegisterDto } from '../dto/auth.dto';
+import { UserRole } from '../../types/user.types';
 
 export class UserService {
     private userRepository = AppDataSource.getRepository(User);
 
-    async createUser(userData: any) {
+    async createUser(userData: RegisterDto): Promise<User> {
         const existingUser = await this.userRepository.findOne({
             where: { email: userData.email },
         });
@@ -20,22 +22,21 @@ export class UserService {
         const user = this.userRepository.create({
             ...userData,
             password: hashedPassword,
-            roles: ['user'],
+            roles: [UserRole.USER],
         });
 
-        await this.userRepository.save(user);
-        return user;
+        return this.userRepository.save(user);
     }
 
     async getAllUsers(): Promise<User[]> {
         return this.userRepository.find();
     }
 
-    async getUserById(id: string): Promise<User | null> {
+    async getUserById(id: number): Promise<User | null> {
         return this.userRepository.findOne({ where: { id } });
     }
 
-    async updateUser(id: string, userData: Partial<User>): Promise<User | null> {
+    async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
         const user = await this.userRepository.findOne({ where: { id } });
         if (!user) {
             return null;
@@ -44,12 +45,12 @@ export class UserService {
         return this.userRepository.save(user);
     }
 
-    async deleteUser(id: string): Promise<boolean> {
+    async deleteUser(id: number): Promise<boolean> {
         const result = await this.userRepository.delete(id);
         return result.affected ? result.affected > 0 : false;
     }
 
-    async blockUser(id: string) {
+    async blockUser(id: number) {
         const user = await this.userRepository.findOne({
             where: { id },
         });
@@ -63,7 +64,7 @@ export class UserService {
         return true;
     }
 
-    async unblockUser(id: string) {
+    async unblockUser(id: number) {
         const user = await this.userRepository.findOne({
             where: { id },
         });
@@ -77,7 +78,7 @@ export class UserService {
         return true;
     }
 
-    async updateRoles(id: string, roles: string[]) {
+    async updateRoles(id: number, roles: string[]) {
         const user = await this.userRepository.findOne({
             where: { id },
         });
@@ -86,12 +87,12 @@ export class UserService {
             throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
         }
 
-        user.roles = roles;
+        user.roles = roles.map(r => r as UserRole);
         await this.userRepository.save(user);
         return true;
     }
 
-    async changePassword(id: string, currentPassword: string, newPassword: string) {
+    async changePassword(id: number, currentPassword: string, newPassword: string) {
         const user = await this.userRepository.findOne({
             where: { id },
             select: ['id', 'password'],

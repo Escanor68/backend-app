@@ -1,340 +1,317 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppDataSource } from '../config/database';
-import { FavoriteField } from '../models/favorite-field.model';
-import { Notification } from '../models/notification.model';
-import {
-    CreateUserDto,
-    UpdateUserDto,
-    UpdatePasswordDto,
-    RequestPasswordResetDto,
-    ResetPasswordDto,
-} from '../dto/user.dto';
-import { ApiError } from '../utils/api-error';
-import { HttpStatus } from '../utils/http-status';
+import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { AuthService } from '../services/auth.service';
-import { PasswordResetService } from '../services/password-reset.service';
+import { ApiError } from '../utils/api-error';
+import { HttpStatus } from '../utils/http-status';
+import { UpdateUserDto, FavoriteFieldDto } from '../types/user.types';
+import { AuthenticatedUser } from '../types/user.types';
 
-// Extender el tipo Request para incluir user
-declare module 'express' {
-    interface Request {
-        user?: {
-            id: string;
-            email: string;
-            roles: string[];
-        };
-    }
+interface AuthenticatedRequest extends Request {
+    user?: AuthenticatedUser;
 }
 
 export class UserController {
-    private favoriteFieldRepository = AppDataSource.getRepository(FavoriteField);
-    private notificationRepository = AppDataSource.getRepository(Notification);
     private userService: UserService;
     private authService: AuthService;
-    private passwordResetService: PasswordResetService;
 
     constructor() {
         this.userService = new UserService();
         this.authService = new AuthService();
-        this.passwordResetService = new PasswordResetService();
     }
 
-    async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async register(req: Request, res: Response): Promise<void> {
         try {
-            const userData: CreateUserDto = req.body;
-            const user = await this.userService.createUser(userData);
+            const user = await this.authService.register(req.body);
             res.status(HttpStatus.CREATED).json(user);
-        } catch (error) {
-            next(error);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
         }
     }
 
-    async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async login(req: Request, res: Response): Promise<void> {
         try {
             const { email, password } = req.body;
             const result = await this.authService.login({ email, password });
             res.json(result);
-        } catch (error) {
-            next(error);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
         }
     }
 
-    async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
                 throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
-            const user = await this.userService.getUserById(req.user.id);
+            const user = await this.userService.getUserById(Number(req.user.id));
             res.json(user);
-        } catch (error) {
-            next(error);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
         }
     }
 
-    async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
                 throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
             const updateData: UpdateUserDto = req.body;
-            const user = await this.userService.updateUser(req.user.id, updateData);
+            const user = await this.userService.updateUser(Number(req.user.id), updateData);
             res.json(user);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async requestPasswordReset(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const { email } = req.body as RequestPasswordResetDto;
-            await this.passwordResetService.requestPasswordReset(email);
-            res.status(HttpStatus.OK).json({
-                message: 'Si el email existe, se enviará un enlace de recuperación',
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
             });
-        } catch (error) {
-            next(error);
         }
     }
 
-    async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const { token, newPassword } = req.body as ResetPasswordDto;
-            await this.passwordResetService.resetPassword(token, newPassword);
-            res.status(HttpStatus.OK).json({
-                message: 'Contraseña actualizada correctamente',
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            await this.userService.changePassword(Number(req.user.id), req.body);
+            res.status(HttpStatus.OK).json({ message: 'Contraseña actualizada exitosamente' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
             });
-        } catch (error) {
-            next(error);
         }
     }
 
-    async getAllUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    async forgotPassword(req: Request, res: Response): Promise<void> {
         try {
+            const { email } = req.body;
+            await this.userService.forgotPassword(email);
+            res.status(HttpStatus.OK).json({
+                message: 'Se ha enviado un correo con instrucciones',
+            });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async resetPassword(req: Request, res: Response): Promise<void> {
+        try {
+            const { token, newPassword } = req.body;
+            await this.userService.resetPassword(token, newPassword);
+            res.status(HttpStatus.OK).json({ message: 'Contraseña actualizada exitosamente' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async getFavoriteFields(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            const fields = await this.userService.getFavoriteFields(Number(req.user.id));
+            res.json(fields);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async addFavoriteField(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            const { fieldId } = req.body;
+            const favoriteField: FavoriteFieldDto = {
+                userId: Number(req.user.id),
+                fieldId: Number(fieldId),
+            };
+            const result = await this.userService.addFavoriteField(
+                favoriteField.userId,
+                favoriteField.fieldId
+            );
+            res.status(HttpStatus.OK).json(result);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async removeFavoriteField(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            const { fieldId } = req.params;
+            await this.userService.removeFavoriteField(Number(req.user.id), Number(fieldId));
+            res.status(HttpStatus.OK).json({ message: 'Campo favorito eliminado exitosamente' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async getNotifications(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            const notifications = await this.userService.getNotifications(Number(req.user.id));
+            res.json(notifications);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async markNotificationAsRead(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
+            const { id } = req.params;
+            await this.userService.markNotificationAsRead(Number(req.user.id), Number(id));
+            res.status(HttpStatus.OK).json({ message: 'Notificación marcada como leída' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
+        }
+    }
+
+    async getAllUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            }
             const users = await this.userService.getAllUsers();
             res.json(users);
-        } catch (error) {
-            next(error);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
         }
     }
 
-    async getUserById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
-            const user = await this.userService.getUserById(userId);
+            const { id } = req.params;
+            const user = await this.userService.getUserById(Number(id));
             res.json(user);
-        } catch (error) {
-            next(error);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
+            }
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
+            });
         }
     }
 
-    async updateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async updateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
+            if (!req.user) {
+                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
+            const { id } = req.params;
             const updateData: UpdateUserDto = req.body;
-            const user = await this.userService.updateUser(userId, updateData);
+            const user = await this.userService.updateUser(Number(id), updateData);
             res.json(user);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async deleteUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
             }
-            await this.userService.deleteUser(userId);
-            res.status(HttpStatus.NO_CONTENT).send();
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async blockUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
-            }
-            const user = await this.userService.blockUser(userId);
-            res.json(user);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async unblockUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
-            }
-            const user = await this.userService.unblockUser(userId);
-            res.json(user);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-            const { currentPassword, newPassword } = req.body;
-            await this.userService.changePassword(req.user.id, currentPassword, newPassword);
-            res.status(HttpStatus.OK).json({
-                message: 'Contraseña actualizada correctamente',
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
             });
-        } catch (error) {
-            next(error);
         }
     }
 
-    async updateRoles(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const userId = req.params.id;
-            if (!userId) {
-                throw new ApiError('ID de usuario inválido', HttpStatus.BAD_REQUEST);
-            }
-            const { roles } = req.body;
-            const user = await this.userService.updateRoles(userId, roles);
-            res.json(user);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async updatePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    async deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
         try {
             if (!req.user) {
                 throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
             }
-            const passwordData: UpdatePasswordDto = req.body;
-            await this.userService.updatePassword(req.user.id, passwordData);
-            res.json({ message: 'Contraseña actualizada exitosamente' });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    // Favorite Fields
-    async addFavoriteField(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-
-            const { fieldId, name } = req.body;
-
-            const favoriteField = this.favoriteFieldRepository.create({
-                fieldId,
-                name,
-                user: { id: req.user.id },
-            });
-
-            const savedField = await this.favoriteFieldRepository.save(favoriteField);
-            res.status(HttpStatus.CREATED).json(savedField);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async removeFavoriteField(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-
-            const userId = req.user.id;
-            const { fieldId } = req.params;
-
-            await this.favoriteFieldRepository.delete({
-                fieldId,
-                user: { id: userId },
-            });
-
-            res.status(HttpStatus.OK).json({ message: 'Campo favorito eliminado' });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async getFavoriteFields(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-
-            const favoriteFields = await this.favoriteFieldRepository.find({
-                where: { user: { id: req.user.id } },
-            });
-
-            res.json(favoriteFields);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    // Notifications
-    async getNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-
-            const notifications = await this.notificationRepository.find({
-                where: { user: { id: req.user.id } },
-                order: { createdAt: 'DESC' },
-            });
-
-            res.json({ notifications });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async markNotificationAsRead(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
-            }
-
             const { id } = req.params;
-            const userId = req.user.id;
-
-            await this.notificationRepository.update({ id, user: { id: userId } }, { read: true });
-
-            res.json({ message: 'Notificación marcada como leída' });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async deleteNotification(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            if (!req.user) {
-                throw new ApiError('Usuario no autenticado', HttpStatus.UNAUTHORIZED);
+            await this.userService.deleteUser(Number(id));
+            res.status(HttpStatus.OK).json({ message: 'Usuario eliminado exitosamente' });
+        } catch (error: unknown) {
+            if (error instanceof ApiError) {
+                res.status(error.statusCode).json({ message: error.message });
+                return;
             }
-
-            const { id } = req.params;
-            const userId = req.user.id;
-
-            await this.notificationRepository.delete({
-                id,
-                user: { id: userId },
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+                message: 'Error interno del servidor',
             });
-
-            res.json({ message: 'Notificación eliminada' });
-        } catch (error) {
-            next(error);
         }
     }
 }

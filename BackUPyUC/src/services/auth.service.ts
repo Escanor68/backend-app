@@ -6,7 +6,8 @@ import { LoginDto } from '../dto/auth.dto';
 import { CreateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import config from '../config';
+import { config } from '../config';
+import { AuthenticatedUser, UserRole, LoginResult } from '../types/user.types';
 
 export class AuthService {
     private userRepository = AppDataSource.getRepository(User);
@@ -49,28 +50,37 @@ export class AuthService {
         const user = this.userRepository.create({
             ...userData,
             password: hashedPassword,
+            roles: userData.roles ? userData.roles.map(r => r as UserRole) : [UserRole.USER],
         });
 
         return this.userRepository.save(user);
     }
 
-    async validateToken(token: string): Promise<User> {
+    async validateToken(token: string): Promise<AuthenticatedUser> {
         try {
-            const decoded = jwt.verify(token, config.jwt.secret) as { id: string };
+            const decoded = jwt.verify(token, config.jwt.secret) as {
+                id: number;
+                email: string;
+                roles: string[];
+            };
             const user = await this.userRepository.findOne({
                 where: { id: decoded.id },
                 select: ['id', 'email', 'roles', 'isBlocked'],
             });
 
             if (!user) {
-                throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
+                throw new ApiError('Usuario no encontrado', HttpStatus.UNAUTHORIZED);
             }
 
             if (user.isBlocked) {
                 throw new ApiError('Usuario bloqueado', HttpStatus.FORBIDDEN);
             }
 
-            return user;
+            return {
+                id: user.id,
+                email: user.email,
+                roles: user.roles,
+            };
         } catch (error) {
             if (error instanceof jwt.JsonWebTokenError) {
                 throw new ApiError('Token inválido', HttpStatus.UNAUTHORIZED);
@@ -79,47 +89,69 @@ export class AuthService {
         }
     }
 
-    async refreshToken(
-        refreshToken: string
-    ): Promise<{ accessToken: string; refreshToken: string }> {
+    async refreshToken(refreshToken: string): Promise<LoginResult> {
         try {
-            const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as { id: string };
+            const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as { id: number };
             const user = await this.userRepository.findOne({
                 where: { id: decoded.id },
-                select: ['id', 'email', 'roles', 'isBlocked'],
+                select: ['id', 'email', 'name', 'roles', 'isBlocked'],
             });
 
             if (!user) {
-                throw new ApiError('Usuario no encontrado', HttpStatus.NOT_FOUND);
+                throw new ApiError('Usuario no encontrado', HttpStatus.UNAUTHORIZED);
             }
 
             if (user.isBlocked) {
                 throw new ApiError('Usuario bloqueado', HttpStatus.FORBIDDEN);
             }
 
-            return this.generateTokens(user);
+            const tokens = this.generateTokens(user);
+
+            return {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    roles: user.roles,
+                    isBlocked: user.isBlocked,
+                    notificationPreferences: {
+                        email: true,
+                        push: true,
+                        sms: false,
+                    },
+                    createdAt: user.createdAt,
+                    updatedAt: user.updatedAt,
+                },
+                token: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+            };
         } catch (error) {
             if (error instanceof jwt.JsonWebTokenError) {
-                throw new ApiError('Token de refresco inválido', HttpStatus.UNAUTHORIZED);
+                throw new ApiError('Token inválido', HttpStatus.UNAUTHORIZED);
             }
             throw error;
         }
     }
 
-    async logout(_userId: string): Promise<void> {
+    async logout(_userId: number): Promise<void> {
         // En una implementación real, podrías invalidar el token de refresco
         // o agregarlo a una lista negra
         return;
     }
 
     private generateTokens(user: User): { accessToken: string; refreshToken: string } {
-        const payload = { id: user.id };
+        const payload: AuthenticatedUser = {
+            id: user.id,
+            email: user.email,
+            roles: user.roles,
+        };
+
         const accessToken = jwt.sign(payload, config.jwt.secret, {
-            expiresIn: config.jwt.accessExpiration,
+            expiresIn: config.jwt.expiresIn,
         } as jwt.SignOptions);
 
-        const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, {
-            expiresIn: config.jwt.refreshExpiration,
+        const refreshToken = jwt.sign({ id: user.id }, config.jwt.refreshSecret, {
+            expiresIn: config.jwt.refreshExpiresIn,
         } as jwt.SignOptions);
 
         return { accessToken, refreshToken };

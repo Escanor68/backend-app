@@ -9,42 +9,42 @@ import {
     ValidateNested,
     IsLatitude,
     IsLongitude,
+    IsNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class LocationDto {
-    @IsLatitude()
-    lat: number;
+    @IsNumber()
+    lat!: number;
 
-    @IsLongitude()
-    lng: number;
+    @IsNumber()
+    lng!: number;
 }
 
 export class NotificationPreferencesDto {
     @IsBoolean()
-    email: boolean;
+    email!: boolean;
 
     @IsBoolean()
-    push: boolean;
+    push!: boolean;
 
     @IsBoolean()
-    sms: boolean;
+    sms!: boolean;
 }
 
 export class CreateUserDto {
+    @IsString()
+    name!: string;
+
     @IsEmail()
-    email: string;
+    email!: string;
 
     @IsString()
-    @MinLength(8)
-    password: string;
+    @MinLength(6)
+    password!: string;
 
     @IsString()
-    @MinLength(2)
-    name: string;
-
     @IsOptional()
-    @IsString()
     phone?: string;
 
     @IsOptional()
@@ -66,14 +66,21 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
-    @IsOptional()
     @IsString()
-    @MinLength(2)
+    @IsOptional()
     name?: string;
 
+    @IsEmail()
     @IsOptional()
+    email?: string;
+
     @IsString()
+    @IsOptional()
     phone?: string;
+
+    @IsArray()
+    @IsOptional()
+    roles?: string[];
 
     @IsOptional()
     @IsObject()
@@ -88,26 +95,25 @@ export class UpdateUserDto {
     notificationPreferences?: NotificationPreferencesDto;
 }
 
-export class UpdatePasswordDto {
+export class ChangePasswordDto {
     @IsString()
-    @MinLength(8)
-    currentPassword: string;
+    currentPassword!: string;
 
     @IsString()
-    @MinLength(8)
-    newPassword: string;
+    @MinLength(6)
+    newPassword!: string;
 }
 
 export class ResetPasswordDto {
     @IsString()
-    token: string;
+    token!: string;
 
     @IsString()
-    @MinLength(8)
-    newPassword: string;
+    @MinLength(6)
+    newPassword!: string;
 }
 
-export class RequestPasswordResetDto {
+export class ForgotPasswordDto {
     @IsEmail()
-    email: string;
+    email!: string;
 }
