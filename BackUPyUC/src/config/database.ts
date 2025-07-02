@@ -1,15 +1,19 @@
 import { DataSource } from 'typeorm';
 import { config } from './index';
 import { mysqlConfig } from './mysql.config';
+import { User } from '../models/user.model';
+import { PasswordResetToken } from '../models/password-reset-token.model';
+import { AuditLog } from '../models/audit-log.model';
+import { BlacklistedToken } from '../models/blacklisted-token.model';
 
 console.log('📦 [Database] Configurando conexión a base de datos...');
 
 // Crear la conexión a la base de datos
 export const AppDataSource = new DataSource({
     ...mysqlConfig,
-    entities: ['src/models/**/*.model.ts'],
+    entities: [User, PasswordResetToken, AuditLog, BlacklistedToken],
     migrations: ['src/migrations/*.ts'],
-    synchronize: config.server.nodeEnv !== 'production',
+    synchronize: false, // Deshabilitado para evitar conflictos con columnas existentes
     logging: config.server.nodeEnv === 'development',
 });
 

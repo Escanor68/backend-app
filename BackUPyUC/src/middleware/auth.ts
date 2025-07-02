@@ -1,8 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../services/auth.service';
+import jwt from 'jsonwebtoken';
+import { AppDataSource } from '../config/database';
+import { User } from '../models/user.model';
 import { ApiError } from '../utils/api-error';
 import { HttpStatus } from '../utils/http-status';
 import { AuthenticatedUser, UserRole } from '../types/user.types';
+
+interface JwtPayload {
+    userId: string;
+}
+
+interface AuthenticatedRequest extends Request {
+    user?: AuthenticatedUser;
+}
 
 declare global {
     namespace Express {
@@ -13,38 +23,51 @@ declare global {
 }
 
 export const authMiddleware = async (
-    req: Request,
-    _res: Response,
+    req: AuthenticatedRequest,
+    res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
         const authHeader = req.headers.authorization;
-
-        if (!authHeader) {
-            throw new ApiError(HttpStatus.UNAUTHORIZED, 'No se proporcionó token de autenticación');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token de autorización requerido');
         }
 
-        const token = authHeader.split(' ')[1];
-        if (!token) {
-            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Formato de token inválido');
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+
+        // Buscar el usuario en la base de datos
+        const userRepository = AppDataSource.getRepository(User);
+        const user = await userRepository.findOne({
+            where: { id: decoded.userId },
+            select: ['id', 'email', 'name', 'roles', 'isBlocked'],
+        });
+
+        if (!user) {
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no encontrado');
         }
 
-        const authService = new AuthService();
-        const user = await authService.validateToken(token);
+        if (user.isBlocked) {
+            throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
+        }
 
-        req.user = {
+        const authenticatedUser: AuthenticatedUser = {
             id: user.id,
             email: user.email,
-            roles: user.roles.map(r => r as UserRole),
+            name: user.name,
+            roles: user.roles,
         };
 
+        req.user = authenticatedUser;
         next();
     } catch (error) {
-        if (error instanceof ApiError) {
-            next(error);
-            return;
+        if (error instanceof jwt.JsonWebTokenError) {
+            next(new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido'));
+        } else if (error instanceof jwt.TokenExpiredError) {
+            next(new ApiError(HttpStatus.UNAUTHORIZED, 'Token expirado'));
+        } else {
+            next(new ApiError(HttpStatus.UNAUTHORIZED, 'Error de autenticación'));
         }
-        next(new ApiError(HttpStatus.UNAUTHORIZED, 'Error de autenticación'));
     }
 };
 

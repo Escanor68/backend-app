@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuditService } from '../api/services/audit.service';
+import { AuditService } from '../services/audit.service';
 
 export const auditMiddleware = (action: string, resource: string) => {
     const auditService = new AuditService();
@@ -23,7 +23,7 @@ export const auditMiddleware = (action: string, resource: string) => {
                 const success = res.statusCode >= 200 && res.statusCode < 300;
 
                 await auditService.logAction(
-                    req.user.id,
+                    req.user.id.toString(),
                     action,
                     resource,
                     resourceId,
@@ -39,7 +39,7 @@ export const auditMiddleware = (action: string, resource: string) => {
                             statusCode: res.statusCode,
                             body: responseBody,
                         },
-                    },
+                    }
                 );
             }
         } catch (error) {
@@ -47,18 +47,15 @@ export const auditMiddleware = (action: string, resource: string) => {
             if (req.user?.id) {
                 const resourceId = req.params.id || null;
                 await auditService.logAction(
-                    req.user.id,
+                    req.user.id.toString(),
                     action,
                     resource,
                     resourceId,
                     req,
                     false,
                     {
-                        error:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
-                    },
+                        error: error instanceof Error ? error.message : String(error),
+                    }
                 );
             }
             throw error;

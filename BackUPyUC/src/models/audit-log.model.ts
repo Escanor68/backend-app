@@ -1,45 +1,40 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('audit_logs')
 export class AuditLog {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    userId: string;
+    userId!: string;
 
     @Column()
-    action: string;
+    action!: string;
 
     @Column()
-    resource: string;
+    resource!: string;
 
     @Column({ nullable: true })
-    resourceId: string;
+    resourceId!: string | null;
 
     @Column()
-    ip: string;
+    ipAddress!: string;
 
     @Column({ type: 'text' })
-    userAgent: string;
+    userAgent!: string;
 
     @Column()
-    success: boolean;
+    success!: boolean;
 
     @Column({ type: 'json', nullable: true })
-    details: any;
+    details!: any;
 
     @Column({ default: false })
-    sensitiveData: boolean;
+    sensitiveData!: boolean;
 
     @Column({ nullable: true })
-    dataHash: string;
+    dataHash!: string;
 
     @CreateDateColumn()
-    timestamp: Date;
+    timestamp!: Date;
 }

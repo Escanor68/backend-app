@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { UserController } from '../controllers/user.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth';
 import { roleMiddleware } from '../middleware/role.middleware';
 import { UserRole } from '../types/user.types';
 

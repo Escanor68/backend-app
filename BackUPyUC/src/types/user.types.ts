@@ -1,20 +1,15 @@
 export enum UserRole {
     USER = 'user',
     ADMIN = 'admin',
-    MANAGER = 'manager',
+    MODERATOR = 'moderator',
 }
 
 export interface UserData {
-    id: number;
-    name: string;
+    id: string;
     email: string;
-    phone?: string;
-    roles: string[];
-    preferredLocation?: {
-        lat: number;
-        lng: number;
-    };
-    notificationPreferences: {
+    name: string;
+    roles: UserRole[];
+    notificationPreferences?: {
         email: boolean;
         push: boolean;
         sms: boolean;
@@ -31,8 +26,10 @@ export interface UserResponse {
 
 export interface LoginResult {
     user: UserData;
-    token: string;
-    refreshToken: string;
+    tokens: {
+        accessToken: string;
+        refreshToken: string;
+    };
 }
 
 export interface UpdateUserDto {
@@ -51,7 +48,7 @@ export interface UpdateUserDto {
 }
 
 export interface FavoriteFieldDto {
-    userId: number;
+    userId: string;
     fieldId: number;
 }
 
@@ -62,7 +59,8 @@ export interface NotificationDto {
 }
 
 export interface AuthenticatedUser {
-    id: number;
+    id: string;
     email: string;
+    name: string;
     roles: UserRole[];
 }

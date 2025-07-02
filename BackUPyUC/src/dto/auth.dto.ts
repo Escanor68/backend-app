@@ -1,22 +1,22 @@
 export class LoginDto {
-    email: string;
-    password: string;
+    email!: string;
+    password!: string;
 }
 
 export class RefreshTokenDto {
-    refreshToken: string;
+    refreshToken!: string;
 }
 
 export class ChangePasswordDto {
-    currentPassword: string;
-    newPassword: string;
+    currentPassword!: string;
+    newPassword!: string;
 }
 
 export class RequestPasswordResetDto {
-    email: string;
+    email!: string;
 }
 
 export class ResetPasswordDto {
-    token: string;
-    newPassword: string;
+    token!: string;
+    newPassword!: string;
 }

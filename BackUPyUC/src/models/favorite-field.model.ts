@@ -9,18 +9,18 @@ import {
 } from 'typeorm';
 import { User } from './user.model';
 
-@Entity()
+@Entity('favorite_fields')
 export class FavoriteField {
     @PrimaryGeneratedColumn()
     id!: number;
 
     @Column()
-    userId!: number;
+    userId!: string;
 
     @Column()
     fieldId!: number;
 
-    @ManyToOne(() => User, user => user.favoriteFields)
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'userId' })
     user!: User;
 

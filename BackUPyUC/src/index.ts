@@ -16,6 +16,8 @@ import swaggerUi from 'swagger-ui-express';
 import csrf from 'csurf';
 import winston from 'winston';
 import { startServer } from './server';
+import cookieParser from 'cookie-parser';
+import { TokenCleanupService } from './services/token-cleanup.service';
 
 dotenv.config();
 console.log('🚀 [BackUPyUC] Iniciando aplicación de usuarios...');
@@ -42,53 +44,45 @@ console.log('📱 [BackUPyUC] Express app y servidor HTTP creados');
 
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: ['http://localhost:3001'],
         methods: ['GET', 'POST'],
     },
 });
-console.log('🔌 [BackUPyUC] Socket.IO configurado - Origin:', process.env.CORS_ORIGIN || '*');
+console.log('🔌 [BackUPyUC] Socket.IO configurado');
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 100, // máximo 100 requests por ventana
 });
-console.log(
-    '🚦 [BackUPyUC] Rate limiting configurado - Window:',
-    Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    'ms, Max requests:',
-    Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100
-);
+console.log('🚦 [BackUPyUC] Rate limiting configurado');
 
 // Middleware
 app.use(limiter);
-console.log('🚦 [BackUPyUC] Rate limiter aplicado');
-
 app.use(
     cors({
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: ['http://localhost:3001', 'http://localhost:4000'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
     })
 );
-console.log('🌐 [BackUPyUC] CORS configurado - Origin:', process.env.CORS_ORIGIN || '*');
+console.log('🌐 [BackUPyUC] CORS configurado');
 
 app.use(helmet());
-console.log('🛡️ [BackUPyUC] Helmet (seguridad) aplicado');
-
 app.use(compression());
-console.log('🗜️ [BackUPyUC] Compresión aplicada');
-
 app.use(express.json({ limit: '10mb' }));
-console.log('📄 [BackUPyUC] JSON parser configurado con límite de 10mb');
-
 app.use(express.urlencoded({ extended: false }));
-console.log('📝 [BackUPyUC] URL encoded parser configurado');
+app.use(cookieParser());
 
-// Protección CSRF (excepto en rutas públicas y GET)
-app.use(
-    csrf({
+console.log('🛡️ [BackUPyUC] Middleware de seguridad aplicado');
+
+// Protección CSRF (excepto en rutas de API y GET)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path === '/health' || req.path.startsWith('/api-docs')) {
+        return next();
+    }
+    return csrf({
         cookie: {
             key: '_csrf',
             path: '/',
@@ -97,8 +91,8 @@ app.use(
             sameSite: 'strict',
         },
         ignoreMethods: ['GET', 'HEAD', 'OPTIONS'],
-    })
-);
+    })(req, res, next);
+});
 console.log('🛡️ [BackUPyUC] CSRF protection configurado');
 
 // Para exponer el token CSRF en las respuestas
@@ -112,18 +106,15 @@ app.use((_req, res, next) => {
     next();
 });
 
-// Configuración de Winston para logging estructurado
+// Configuración de Winston para logging
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
-    transports: [
-        new winston.transports.Console(),
-        // Puedes agregar aquí un archivo o transporte externo
-    ],
+    transports: [new winston.transports.Console()],
 });
 
-// Middleware de logging usando Winston
-app.use(((req: Request, res: Response, next: NextFunction): void => {
+// Middleware de logging
+app.use(((req: Request, _res: Response, next: NextFunction): void => {
     logger.info({
         message: 'Request recibida',
         method: req.method,
@@ -138,8 +129,6 @@ if (process.env.NODE_ENV !== 'production') {
     const swaggerDocument = require('../swagger.json');
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
     console.log('📚 [BackUPyUC] Swagger UI configurado en /api-docs');
-} else {
-    console.log('📚 [BackUPyUC] Swagger UI deshabilitado en producción');
 }
 
 // Health check
@@ -153,20 +142,18 @@ app.get('/health', (_req, res) => {
 });
 
 // API Routes
-const apiPrefix = process.env.API_PREFIX || '/api';
-const apiVersion = process.env.API_VERSION || 'v1';
-app.use(`${apiPrefix}/${apiVersion}`, routes);
-console.log(`🛣️ [BackUPyUC] Rutas API configuradas en ${apiPrefix}/${apiVersion}`);
+app.use('/api', routes);
+console.log('🛣️ [BackUPyUC] Rutas API configuradas en /api');
 
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-// Middleware 404 - Debe ir después de todas las rutas
+// Middleware 404
 app.use(notFoundHandler as RequestHandler);
 console.log('🔍 [BackUPyUC] Middleware 404 configurado');
 
-// Middleware de manejo de errores - Debe ir al final
+// Middleware de manejo de errores
 app.use(errorHandler as ErrorRequestHandler);
 console.log('⚠️ [BackUPyUC] Middleware de manejo de errores configurado');
 
@@ -195,42 +182,26 @@ process.on('SIGTERM', () => {
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 [BackUPyUC] SIGINT received. Shutting down gracefully...');
+    console.log('🛑 [BackUPyUC] SIGINT signal received: closing HTTP server');
     server.close(() => {
-        console.log('💤 [BackUPyUC] Server closed');
+        console.log('💤 [BackUPyUC] HTTP server closed');
         process.exit(0);
     });
 });
 
-// Initialize database
-console.log('🔄 [BackUPyUC] Iniciando conexión a base de datos...');
-setupDatabase()
-    .then(() => {
-        console.log('📦 [BackUPyUC] ✅ Base de datos inicializada correctamente');
+// Iniciar servidor
+const PORT = process.env.PORT || 3001;
 
-        const PORT = process.env.PORT || 3000;
-        server.listen(PORT, () => {
-            console.log('=================================');
-            console.log(`🚀 [BackUPyUC] ✅ Server running on port ${PORT}`);
-            console.log(`🔧 [BackUPyUC] Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`🌐 [BackUPyUC] URL: http://localhost:${PORT}`);
-            console.log(`❤️ [BackUPyUC] Health check: http://localhost:${PORT}/health`);
-            if (process.env.NODE_ENV !== 'production') {
-                console.log(`📚 [BackUPyUC] API Documentation: http://localhost:${PORT}/api-docs`);
-            }
-            console.log('=================================');
-        });
-    })
-    .catch((error: Error) => {
-        console.error('❌ [BackUPyUC] Failed to initialize database:', error);
-        console.error('❌ [BackUPyUC] Stack trace:', error.stack);
-        process.exit(1);
-    });
+// Inicializar servicio de limpieza de tokens
+const tokenCleanupService = new TokenCleanupService();
+tokenCleanupService.startCleanup(60); // Limpiar cada hora
 
-// Iniciar el servidor
-startServer().catch(error => {
-    console.error('Error al iniciar la aplicación:', error);
-    process.exit(1);
+server.listen(PORT, () => {
+    console.log(`🚀 [BackUPyUC] Servidor iniciado en puerto ${PORT}`);
+    console.log(`🌐 [BackUPyUC] URL: http://localhost:${PORT}`);
+    console.log(`📚 [BackUPyUC] API Docs: http://localhost:${PORT}/api-docs`);
+    console.log(`❤️ [BackUPyUC] Health Check: http://localhost:${PORT}/health`);
+    console.log(`🧹 [BackUPyUC] Token cleanup service iniciado`);
 });
 
 export default app;

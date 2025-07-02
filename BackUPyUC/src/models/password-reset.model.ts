@@ -4,20 +4,20 @@ import { User } from './user.model';
 @Entity()
 export class PasswordReset {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
-    user: User;
+    user!: User;
 
     @Column()
-    token: string;
+    token!: string;
 
     @Column()
-    used: boolean;
+    used!: boolean;
 
     @Column()
-    expiresAt: Date;
+    expiresAt!: Date;
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 }

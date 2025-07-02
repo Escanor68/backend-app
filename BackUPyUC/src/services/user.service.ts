@@ -37,7 +37,7 @@ export class UserService {
         return this.userRepository.save(user);
     }
 
-    async getUserById(id: number): Promise<User> {
+    async getUserById(id: string): Promise<User> {
         const user = await this.userRepository.findOne({
             where: { id },
         });
@@ -53,7 +53,7 @@ export class UserService {
         return this.userRepository.find();
     }
 
-    async updateUser(id: number, userData: Partial<User>): Promise<User | null> {
+    async updateUser(id: string, userData: Partial<User>): Promise<User | null> {
         const user = await this.userRepository.findOne({ where: { id } });
         if (!user) {
             return null;
@@ -62,24 +62,24 @@ export class UserService {
         return this.userRepository.save(user);
     }
 
-    async deleteUser(id: number): Promise<void> {
+    async deleteUser(id: string): Promise<void> {
         const user = await this.getUserById(id);
         await this.userRepository.remove(user);
     }
 
-    async blockUser(id: number): Promise<User> {
+    async blockUser(id: string): Promise<User> {
         const user = await this.getUserById(id);
         user.isBlocked = true;
         return this.userRepository.save(user);
     }
 
-    async unblockUser(id: number): Promise<User> {
+    async unblockUser(id: string): Promise<User> {
         const user = await this.getUserById(id);
         user.isBlocked = false;
         return this.userRepository.save(user);
     }
 
-    async changePassword(id: number, data: ChangePasswordDto): Promise<void> {
+    async changePassword(id: string, data: ChangePasswordDto): Promise<void> {
         const user = await this.getUserById(id);
         if (!(await user.comparePassword(data.currentPassword))) {
             throw new ApiError(HttpStatus.UNAUTHORIZED, 'Contraseña actual incorrecta');
@@ -88,7 +88,7 @@ export class UserService {
         await this.userRepository.save(user);
     }
 
-    async updateRoles(id: number, roles: string[]): Promise<User> {
+    async updateRoles(id: string, roles: string[]): Promise<User> {
         const user = await this.getUserById(id);
         user.roles = roles as UserRole[];
         return this.userRepository.save(user);
@@ -155,7 +155,7 @@ export class UserService {
         await this.passwordResetTokenRepository.remove(resetToken);
     }
 
-    async getFavoriteFields(userId: number): Promise<FavoriteField[]> {
+    async getFavoriteFields(userId: string): Promise<FavoriteField[]> {
         const user = await this.getUserById(userId);
         return this.favoriteFieldRepository.find({
             where: { userId: user.id },
@@ -163,7 +163,7 @@ export class UserService {
         });
     }
 
-    async addFavoriteField(userId: number, fieldId: number): Promise<FavoriteField> {
+    async addFavoriteField(userId: string, fieldId: number): Promise<FavoriteField> {
         const user = await this.getUserById(userId);
 
         const existingFavorite = await this.favoriteFieldRepository.findOne({
@@ -182,7 +182,7 @@ export class UserService {
         return this.favoriteFieldRepository.save(favoriteField);
     }
 
-    async removeFavoriteField(userId: number, fieldId: number): Promise<void> {
+    async removeFavoriteField(userId: string, fieldId: number): Promise<void> {
         const user = await this.getUserById(userId);
 
         const favoriteField = await this.favoriteFieldRepository.findOne({
@@ -196,7 +196,7 @@ export class UserService {
         await this.favoriteFieldRepository.remove(favoriteField);
     }
 
-    async getNotifications(userId: number): Promise<Notification[]> {
+    async getNotifications(userId: string): Promise<Notification[]> {
         const user = await this.getUserById(userId);
         return this.notificationRepository.find({
             where: { userId: user.id },
@@ -204,7 +204,7 @@ export class UserService {
         });
     }
 
-    async markNotificationAsRead(userId: number, notificationId: number): Promise<void> {
+    async markNotificationAsRead(userId: string, notificationId: number): Promise<void> {
         const user = await this.getUserById(userId);
 
         const notification = await this.notificationRepository.findOne({

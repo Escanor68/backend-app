@@ -15,7 +15,7 @@ export class Notification {
     id!: number;
 
     @Column()
-    userId!: number;
+    userId!: string;
 
     @Column()
     message!: string;
@@ -23,7 +23,13 @@ export class Notification {
     @Column({ default: false })
     isRead!: boolean;
 
-    @ManyToOne(() => User, user => user.notifications)
+    @Column({ nullable: true })
+    type?: string;
+
+    @Column({ type: 'json', nullable: true })
+    metadata?: any;
+
+    @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'userId' })
     user!: User;
 

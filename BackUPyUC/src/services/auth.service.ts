@@ -6,18 +6,30 @@ import { LoginDto } from '../dto/auth.dto';
 import { CreateUserDto } from '../dto/user.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { config } from '../config';
-import { AuthenticatedUser, UserRole, LoginResult } from '../types/user.types';
+import { UserRole, UserData, LoginResult } from '../types/user.types';
+import { TokenBlacklistService } from './token-blacklist.service';
+
+interface JwtPayload {
+    userId: string;
+}
 
 export class AuthService {
     private userRepository = AppDataSource.getRepository(User);
+    private tokenBlacklistService = new TokenBlacklistService();
 
-    async login(
-        loginData: LoginDto
-    ): Promise<{ user: User; tokens: { accessToken: string; refreshToken: string } }> {
+    async login(loginData: LoginDto): Promise<LoginResult> {
         const user = await this.userRepository.findOne({
             where: { email: loginData.email },
-            select: ['id', 'email', 'password', 'roles', 'isBlocked'],
+            select: [
+                'id',
+                'email',
+                'password',
+                'roles',
+                'isBlocked',
+                'name',
+                'createdAt',
+                'updatedAt',
+            ],
         });
 
         if (!user) {
@@ -34,7 +46,18 @@ export class AuthService {
         }
 
         const tokens = this.generateTokens(user);
-        return { user, tokens };
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                roles: user.roles,
+                isBlocked: user.isBlocked,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
+            },
+            tokens,
+        };
     }
 
     async register(userData: CreateUserDto): Promise<User> {
@@ -56,57 +79,63 @@ export class AuthService {
         return this.userRepository.save(user);
     }
 
-    async validateToken(token: string): Promise<AuthenticatedUser> {
+    async validateToken(token: string): Promise<UserData> {
         try {
-            const decoded = jwt.verify(token, config.jwt.secret) as {
-                id: number;
-                email: string;
-                roles: string[];
-            };
-            const user = await this.userRepository.findOne({
-                where: { id: decoded.id },
-                select: ['id', 'email', 'roles', 'isBlocked'],
-            });
+            // Verificar si el token está en la lista negra
+            const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(token);
+            if (isBlacklisted) {
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token invalidado');
+            }
 
+            const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+            const user = await this.userRepository.findOne({ where: { id: decoded.userId } });
             if (!user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no encontrado');
             }
-
-            if (user.isBlocked) {
-                throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
-            }
-
             return {
                 id: user.id,
                 email: user.email,
+                name: user.name,
                 roles: user.roles,
+                isBlocked: user.isBlocked,
+                createdAt: user.createdAt,
+                updatedAt: user.updatedAt,
             };
         } catch (error) {
-            if (error instanceof jwt.JsonWebTokenError) {
-                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido');
-            }
-            throw error;
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido');
         }
+    }
+
+    async getProfile(userId: string): Promise<UserData> {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            throw new ApiError(HttpStatus.NOT_FOUND, 'Usuario no encontrado');
+        }
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            roles: user.roles,
+            isBlocked: user.isBlocked,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        };
     }
 
     async refreshToken(refreshToken: string): Promise<LoginResult> {
         try {
-            const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as { id: number };
-            const user = await this.userRepository.findOne({
-                where: { id: decoded.id },
-                select: ['id', 'email', 'name', 'roles', 'isBlocked'],
-            });
+            // Verificar si el refresh token está en la lista negra
+            const isBlacklisted = await this.tokenBlacklistService.isBlacklisted(refreshToken);
+            if (isBlacklisted) {
+                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Refresh token invalidado');
+            }
 
+            const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as JwtPayload;
+            const user = await this.userRepository.findOne({ where: { id: decoded.userId } });
             if (!user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no encontrado');
             }
-
-            if (user.isBlocked) {
-                throw new ApiError(HttpStatus.FORBIDDEN, 'Usuario bloqueado');
-            }
-
             const tokens = this.generateTokens(user);
-
             return {
                 user: {
                     id: user.id,
@@ -114,46 +143,55 @@ export class AuthService {
                     name: user.name,
                     roles: user.roles,
                     isBlocked: user.isBlocked,
-                    notificationPreferences: {
-                        email: true,
-                        push: true,
-                        sms: false,
-                    },
                     createdAt: user.createdAt,
                     updatedAt: user.updatedAt,
                 },
-                token: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
+                tokens,
             };
         } catch (error) {
-            if (error instanceof jwt.JsonWebTokenError) {
-                throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token inválido');
+            throw new ApiError(HttpStatus.UNAUTHORIZED, 'Token de refresco inválido');
+        }
+    }
+
+    async logout(userId: string, accessToken?: string, refreshToken?: string): Promise<void> {
+        try {
+            // Agregar tokens a la lista negra si se proporcionan
+            if (accessToken) {
+                await this.tokenBlacklistService.addToBlacklist(accessToken, userId, 'logout');
             }
+            if (refreshToken) {
+                await this.tokenBlacklistService.addToBlacklist(refreshToken, userId, 'logout');
+            }
+
+            console.log(`🚪 [AuthService] Usuario ${userId} ha cerrado sesión`);
+        } catch (error) {
+            console.error('❌ [AuthService] Error en logout:', error);
             throw error;
         }
     }
 
-    async logout(_userId: number): Promise<void> {
-        // En una implementación real, podrías invalidar el token de refresco
-        // o agregarlo a una lista negra
-        return;
+    async logoutAllSessions(userId: string): Promise<void> {
+        try {
+            // Obtener todos los tokens del usuario y agregarlos a la lista negra
+            const userTokens = await this.tokenBlacklistService.getBlacklistedTokensByUser(userId);
+
+            // Aquí podrías implementar lógica adicional para invalidar todos los tokens activos
+            // Por ejemplo, mantener un registro de tokens activos por usuario
+
+            console.log(`🚪 [AuthService] Usuario ${userId} ha cerrado todas las sesiones`);
+        } catch (error) {
+            console.error('❌ [AuthService] Error cerrando todas las sesiones:', error);
+            throw error;
+        }
     }
 
     private generateTokens(user: User): { accessToken: string; refreshToken: string } {
-        const payload: AuthenticatedUser = {
-            id: user.id,
-            email: user.email,
-            roles: user.roles,
-        };
-
-        const accessToken = jwt.sign(payload, config.jwt.secret, {
-            expiresIn: config.jwt.expiresIn,
-        } as jwt.SignOptions);
-
-        const refreshToken = jwt.sign({ id: user.id }, config.jwt.refreshSecret, {
-            expiresIn: config.jwt.refreshExpiresIn,
-        } as jwt.SignOptions);
-
+        const accessToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
+            expiresIn: '15m',
+        });
+        const refreshToken = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
+            expiresIn: '7d',
+        });
         return { accessToken, refreshToken };
     }
 }

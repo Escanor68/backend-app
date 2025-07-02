@@ -55,7 +55,7 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const user = await this.userService.getUserById(Number(req.user.id));
+            const user = await this.userService.getUserById(req.user.id);
             res.json(user);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -74,7 +74,7 @@ export class UserController {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const updateData: UpdateUserDto = req.body;
-            const user = await this.userService.updateUser(Number(req.user.id), updateData);
+            const user = await this.userService.updateUser(req.user.id, updateData);
             res.json(user);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -92,7 +92,7 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            await this.userService.changePassword(Number(req.user.id), req.body);
+            await this.userService.changePassword(req.user.id, req.body);
             res.status(HttpStatus.OK).json({ message: 'Contraseña actualizada exitosamente' });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -144,8 +144,11 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const fields = await this.userService.getFavoriteFields(Number(req.user.id));
-            res.json(fields);
+            const fields = await this.userService.getFavoriteFields(req.user.id);
+
+            // Devolver solo los IDs de los campos favoritos como strings
+            const fieldIds = fields.map(field => field.fieldId.toString());
+            res.json(fieldIds);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({ message: error.message });
@@ -164,7 +167,7 @@ export class UserController {
             }
             const { fieldId } = req.body;
             const favoriteField: FavoriteFieldDto = {
-                userId: Number(req.user.id),
+                userId: req.user.id,
                 fieldId: Number(fieldId),
             };
             const result = await this.userService.addFavoriteField(
@@ -189,7 +192,7 @@ export class UserController {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const { fieldId } = req.params;
-            await this.userService.removeFavoriteField(Number(req.user.id), Number(fieldId));
+            await this.userService.removeFavoriteField(req.user.id, Number(fieldId));
             res.status(HttpStatus.OK).json({ message: 'Campo favorito eliminado exitosamente' });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -207,8 +210,17 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const notifications = await this.userService.getNotifications(Number(req.user.id));
-            res.json(notifications);
+            const notifications = await this.userService.getNotifications(req.user.id);
+
+            // Transformar a la estructura que espera el frontend
+            const formattedNotifications = notifications.map(notification => ({
+                id: notification.id.toString(),
+                message: notification.message,
+                read: notification.isRead,
+                createdAt: notification.createdAt,
+            }));
+
+            res.json(formattedNotifications);
         } catch (error: unknown) {
             if (error instanceof ApiError) {
                 res.status(error.statusCode).json({ message: error.message });
@@ -226,7 +238,7 @@ export class UserController {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
             const { id } = req.params;
-            await this.userService.markNotificationAsRead(Number(req.user.id), Number(id));
+            await this.userService.markNotificationAsRead(req.user.id, Number(id));
             res.status(HttpStatus.OK).json({ message: 'Notificación marcada como leída' });
         } catch (error: unknown) {
             if (error instanceof ApiError) {
@@ -262,10 +274,7 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const id = parseInt(req.params.id);
-            if (isNaN(id)) {
-                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
-            }
+            const id = req.params.id;
             const user = await this.userService.getUserById(id);
             res.json(user);
         } catch (error: unknown) {
@@ -284,10 +293,7 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const id = parseInt(req.params.id);
-            if (isNaN(id)) {
-                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
-            }
+            const id = req.params.id;
             const updateData: UpdateUserDto = req.body;
             const user = await this.userService.updateUser(id, updateData);
             if (!user) {
@@ -310,10 +316,7 @@ export class UserController {
             if (!req.user) {
                 throw new ApiError(HttpStatus.UNAUTHORIZED, 'Usuario no autenticado');
             }
-            const id = parseInt(req.params.id);
-            if (isNaN(id)) {
-                throw new ApiError(HttpStatus.BAD_REQUEST, 'ID de usuario inválido');
-            }
+            const id = req.params.id;
             await this.userService.deleteUser(id);
             res.status(HttpStatus.NO_CONTENT).send();
         } catch (error: unknown) {

@@ -7,8 +7,6 @@ import {
     IsBoolean,
     IsObject,
     ValidateNested,
-    IsLatitude,
-    IsLongitude,
     IsNumber,
     IsEnum,
 } from 'class-validator';
@@ -117,6 +115,11 @@ export class ResetPasswordDto {
 }
 
 export class ForgotPasswordDto {
+    @IsEmail()
+    email!: string;
+}
+
+export class RequestPasswordResetDto {
     @IsEmail()
     email!: string;
 }
