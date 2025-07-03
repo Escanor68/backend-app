@@ -12,6 +12,8 @@
         "strictNullChecks": true,
         "strictPropertyInitialization": false,
         "strict": true,
+        "skipLibCheck": true,
+        "isolatedModules": true,
         "types": ["jest"]
     },
     "include": [

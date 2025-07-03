@@ -127,17 +127,29 @@ class RefundService {
             },
         };
         // Actualizar metadata del pago
+        const refundHistory = {
+            id: mpRefund.id,
+            status: mpRefund.status,
+            reason: request.reason || 'Reembolso solicitado',
+            amount: refundAmount,
+            date: new Date(),
+            mercadoPagoRefundId: mpRefund.id,
+            metadata: {
+                originalRequest: request,
+                mpResponse: {
+                    id: mpRefund.id,
+                    status: mpRefund.status,
+                    date_created: mpRefund.date_created,
+                    amount: mpRefund.amount,
+                },
+            },
+        };
         payment.metadata = {
             ...payment.metadata,
             lastRefundUpdate: new Date(),
             refundHistory: [
                 ...(payment.metadata?.refundHistory || []),
-                {
-                    id: mpRefund.id,
-                    amount: refundAmount,
-                    date: new Date(),
-                    status: mpRefund.status,
-                },
+                refundHistory,
             ],
         };
         await this.paymentRepository.save(payment);
@@ -165,83 +177,80 @@ class RefundService {
             const payment = await this.paymentRepository.findOne({
                 where: { id: paymentId },
             });
-            if (!payment || !payment.refund) {
-                throw new Error('No se encontró información de reembolso para este pago');
+            if (!payment) {
+                throw new Error(`Pago no encontrado: ${paymentId}`);
             }
-            if (!payment.refund.mercadoPagoRefundId) {
-                return payment.refund; // Devolver info local si no hay ID de MP
+            if (!payment.mercadoPagoId) {
+                throw new Error('El pago no tiene ID de Mercado Pago asociado');
             }
-            // Consultar estado actualizado en Mercado Pago
-            const mpRefund = await this.paymentRefund.get({
+            if (!payment.refund?.mercadoPagoRefundId) {
+                throw new Error('El pago no tiene ID de reembolso de Mercado Pago asociado');
+            }
+            const refund = await this.paymentRefund.get({
                 payment_id: payment.mercadoPagoId,
                 refund_id: payment.refund.mercadoPagoRefundId,
             });
-            // Actualizar estado local si cambió
-            if (mpRefund.status !== payment.refund.status) {
-                payment.refund.status =
-                    mpRefund.status === 'approved' ? 'completed' : 'pending';
-                await this.paymentRepository.save(payment);
-                // Emitir evento de actualización
-                paymentEvents_1.paymentEvents.emitRefundUpdate(payment.id, payment.refund.status, payment.refund.amount, payment.refund.reason);
-            }
             return {
-                ...payment.refund,
-                mercadoPagoStatus: mpRefund.status,
-                lastUpdated: new Date(),
+                id: refund.id,
+                status: refund.status,
+                amount: refund.amount,
+                dateCreated: refund.date_created,
             };
         }
         catch (error) {
-            console.error('❌ [RefundService] Error obteniendo estado de reembolso:', error);
+            console.error('Error getting refund status:', error);
             throw error;
         }
     }
     /**
-     * Lista todos los reembolsos de un usuario
+     * Obtiene el historial de reembolsos de un usuario
      */
     async getUserRefunds(userId) {
-        const payments = await this.paymentRepository.find({
-            where: {
-                userId,
-                refund: { $ne: null },
-            },
-        });
-        return payments
-            .filter((payment) => payment.refund)
-            .map((payment) => ({
-            paymentId: payment.id,
-            refund: payment.refund,
-            originalAmount: payment.amount,
-            paymentDate: payment.createdAt,
-        }));
+        try {
+            const payments = await this.paymentRepository.find({
+                where: { userId },
+                order: { createdAt: 'DESC' },
+            });
+            return payments
+                .filter((payment) => payment.refund)
+                .map((payment) => ({
+                paymentId: payment.id,
+                amount: payment.amount,
+                status: payment.status,
+                refund: payment.refund,
+                createdAt: payment.createdAt,
+            }));
+        }
+        catch (error) {
+            console.error('Error getting user refunds:', error);
+            throw error;
+        }
     }
     /**
-     * Cancela un reembolso pendiente (si es posible)
+     * Cancela un reembolso pendiente
      */
     async cancelRefund(paymentId) {
         try {
             const payment = await this.paymentRepository.findOne({
                 where: { id: paymentId },
             });
-            if (!payment || !payment.refund) {
-                throw new Error('No se encontró reembolso para cancelar');
+            if (!payment) {
+                throw new Error(`Pago no encontrado: ${paymentId}`);
             }
-            if (payment.refund.status === 'completed') {
-                throw new Error('No se puede cancelar un reembolso ya completado');
+            if (!payment.refund || payment.refund.status !== 'pending') {
+                throw new Error('No hay un reembolso pendiente para cancelar');
             }
-            // Aquí iría la lógica para cancelar en MP si es posible
-            // Por ahora, solo marcamos como cancelado localmente
+            // Actualizar el estado del reembolso
             payment.refund.status = 'cancelled';
             payment.refund.metadata = {
                 ...payment.refund.metadata,
                 cancelledAt: new Date(),
-                cancelReason: 'Cancelled by user',
             };
             await this.paymentRepository.save(payment);
-            paymentEvents_1.paymentEvents.emitRefundUpdate(payment.id, 'cancelled', payment.refund.amount, 'Cancelled by user');
             return true;
         }
         catch (error) {
-            console.error('❌ [RefundService] Error cancelando reembolso:', error);
+            console.error('Error cancelling refund:', error);
             throw error;
         }
     }

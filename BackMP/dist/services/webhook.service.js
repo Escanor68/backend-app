@@ -5,15 +5,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebhookService = void 0;
 const crypto_1 = __importDefault(require("crypto"));
-const mercadopago_1 = require("mercadopago");
 const database_1 = require("../config/database");
 const payment_model_1 = require("../models/payment.model");
-const config_1 = require("../config");
-const paymentEvents_1 = require("../events/paymentEvents");
+const booking_model_1 = require("../models/booking.model");
+const field_model_1 = require("../models/field.model");
+const user_model_1 = require("../models/user.model");
 const logger_1 = require("../utils/logger");
+const payment_types_1 = require("../types/payment.types");
+const booking_types_1 = require("../types/booking.types");
+const notification_service_1 = require("./notification.service");
+const mercado_pago_service_1 = require("./mercado-pago.service");
 class WebhookService {
     constructor() {
         this.paymentRepository = database_1.AppDataSource.getRepository(payment_model_1.Payment);
+        this.bookingRepository = database_1.AppDataSource.getRepository(booking_model_1.Booking);
+        this.fieldRepository = database_1.AppDataSource.getRepository(field_model_1.Field);
+        this.userRepository = database_1.AppDataSource.getRepository(user_model_1.User);
+        this.notificationService = new notification_service_1.NotificationService();
+        this.mercadoPagoService = new mercado_pago_service_1.MercadoPagoService();
         this.mercadoPagoSecret = process.env.MP_WEBHOOK_SECRET || '';
         if (!this.mercadoPagoSecret) {
             console.warn('⚠️ [WebhookService] MP_WEBHOOK_SECRET no configurado - webhooks no serán seguros');
@@ -67,93 +76,98 @@ class WebhookService {
     /**
      * Procesa un evento de webhook de Mercado Pago
      */
-    async processWebhookEvent(event) {
+    async handleWebhook(event) {
         try {
-            console.log(`📨 [WebhookService] Procesando evento: ${event.type} - ${event.action}`);
-            console.log(`🆔 [WebhookService] Payment ID: ${event.data.id}`);
+            logger_1.logger.info('Webhook recibido:', event);
             switch (event.type) {
                 case 'payment':
-                    await this.handlePaymentEvent(event);
+                    await this.handlePaymentWebhook(event);
+                    break;
+                case 'refund':
+                    await this.handleRefundWebhook(event);
                     break;
                 case 'merchant_order':
                     await this.handleMerchantOrderEvent(event);
                     break;
                 default:
-                    console.log(`⚠️ [WebhookService] Tipo de evento no manejado: ${event.type}`);
+                    logger_1.logger.warn('Tipo de webhook no manejado:', event.type);
             }
         }
         catch (error) {
-            console.error('❌ [WebhookService] Error procesando evento:', error);
-            logger_1.logger.error('Webhook processing error:', error);
+            logger_1.logger.error('Error procesando webhook:', error);
             throw error;
         }
     }
-    /**
-     * Maneja eventos de pago
-     */
-    async handlePaymentEvent(event) {
-        const paymentId = event.data.id;
+    async handlePaymentWebhook(event) {
         try {
-            // Validar que tenemos el access token
-            if (!config_1.config.mercadoPago.accessToken) {
-                throw new Error('Access token de Mercado Pago no configurado');
-            }
-            // Obtener información actualizada del pago desde MP
-            const mpPayment = new mercadopago_1.Payment({
-                accessToken: config_1.config.mercadoPago.accessToken,
-            });
-            const paymentInfo = await mpPayment.get({ id: paymentId });
-            console.log(`💳 [WebhookService] Información de pago obtenida:`, {
-                id: paymentInfo.id,
-                status: paymentInfo.status,
-                status_detail: paymentInfo.status_detail,
-            });
-            // Buscar el pago en nuestra base de datos
+            const paymentId = event.data.id;
             const payment = await this.paymentRepository.findOne({
-                where: { mercadoPagoId: paymentId },
+                where: { externalId: paymentId },
+                relations: ['booking', 'field', 'user'],
             });
             if (!payment) {
-                console.warn(`⚠️ [WebhookService] Pago no encontrado en BD: ${paymentId}`);
+                logger_1.logger.warn('Pago no encontrado:', paymentId);
                 return;
             }
-            const oldStatus = payment.status;
-            const newStatus = paymentInfo.status;
-            // Actualizar estado del pago
-            payment.status = newStatus || 'unknown';
-            payment.metadata = {
-                ...payment.metadata,
-                lastWebhookUpdate: new Date(),
-                statusDetail: paymentInfo.status_detail,
-                paymentInfo,
-            };
-            await this.paymentRepository.save(payment);
-            // Emitir eventos según el cambio de estado
-            if (oldStatus !== newStatus) {
-                console.log(`📊 [WebhookService] Estado cambió: ${oldStatus} -> ${newStatus}`);
-                paymentEvents_1.paymentEvents.emitPaymentStatusUpdate(payment.id, newStatus || 'unknown', {
-                    previousStatus: oldStatus,
+            const paymentInfo = await this.mercadoPagoService.getPayment(paymentId);
+            const newStatus = this.mapMercadoPagoStatus(paymentInfo.status);
+            if (newStatus !== payment.status) {
+                payment.status = newStatus;
+                payment.metadata = {
+                    ...payment.metadata,
+                    transactionId: paymentInfo.id,
+                    paymentMethodId: paymentInfo.payment_method_id,
+                    paymentTypeId: paymentInfo.payment_type_id,
                     statusDetail: paymentInfo.status_detail,
-                    webhookTriggered: true,
-                });
-                // Eventos específicos según el estado
-                switch (newStatus) {
-                    case 'approved':
-                        paymentEvents_1.paymentEvents.emitPaymentCompleted(payment.id, paymentInfo);
-                        await this.handlePaymentApproved(payment);
-                        break;
-                    case 'rejected':
-                    case 'cancelled':
-                        paymentEvents_1.paymentEvents.emitPaymentFailed(payment.id, paymentInfo.status_detail || 'Payment failed');
-                        await this.handlePaymentFailed(payment);
-                        break;
-                    case 'refunded':
-                        paymentEvents_1.paymentEvents.emitRefundUpdate(payment.id, 'completed');
-                        break;
+                    externalReference: paymentInfo.external_reference,
+                    description: paymentInfo.description,
+                };
+                await this.paymentRepository.save(payment);
+                // Actualizar estado de la reserva
+                if (payment.booking) {
+                    await this.updateBookingStatus(payment);
                 }
+                // Notificar al usuario
+                await this.notifyUser(payment);
             }
         }
         catch (error) {
-            console.error(`❌ [WebhookService] Error manejando evento de pago ${paymentId}:`, error);
+            logger_1.logger.error('Error procesando webhook de pago:', error);
+            throw error;
+        }
+    }
+    async handleRefundWebhook(event) {
+        try {
+            const refundId = event.data.id;
+            const refund = await this.mercadoPagoService.getRefund(refundId);
+            const payment = await this.paymentRepository.findOne({
+                where: { externalId: refund.payment_id },
+                relations: ['booking', 'field', 'user'],
+            });
+            if (!payment) {
+                logger_1.logger.warn('Pago no encontrado para reembolso:', refund.payment_id);
+                return;
+            }
+            payment.status = payment_types_1.PaymentStatus.REFUNDED;
+            payment.metadata = {
+                ...payment.metadata,
+                transactionId: refund.id,
+                paymentMethodId: refund.payment_id,
+                paymentTypeId: refund.payment_id,
+                statusDetail: refund.status,
+                externalReference: refund.external_reference,
+                description: refund.reason,
+            };
+            await this.paymentRepository.save(payment);
+            // Actualizar estado de la reserva
+            if (payment.booking) {
+                await this.updateBookingStatus(payment);
+            }
+            // Notificar al usuario
+            await this.notifyUser(payment);
+        }
+        catch (error) {
+            logger_1.logger.error('Error procesando webhook de reembolso:', error);
             throw error;
         }
     }
@@ -164,44 +178,88 @@ class WebhookService {
         console.log(`🏪 [WebhookService] Procesando merchant order: ${event.data.id}`);
         // Aquí se puede implementar lógica para órdenes de comercio si es necesario
     }
-    /**
-     * Maneja pago aprobado - confirma reserva
-     */
-    async handlePaymentApproved(payment) {
+    async updateBookingStatus(payment) {
         try {
-            console.log(`✅ [WebhookService] Pago aprobado - confirmando reserva: ${payment.bookingId}`);
-            // Aquí se integraría con el servicio de reservas
-            // await this.reservationService.confirmReservation(payment.bookingId);
-            // Por ahora, solo marcamos como procesado
-            payment.metadata = {
-                ...payment.metadata,
-                reservationConfirmed: true,
-                confirmedAt: new Date(),
-            };
-            await this.paymentRepository.save(payment);
+            if (!payment.booking)
+                return;
+            const booking = await this.bookingRepository.findOne({
+                where: { id: payment.booking.id },
+            });
+            if (!booking) {
+                logger_1.logger.warn('Reserva no encontrada:', payment.booking.id);
+                return;
+            }
+            let newStatus;
+            switch (payment.status) {
+                case payment_types_1.PaymentStatus.APPROVED:
+                    newStatus = booking_types_1.BookingStatus.CONFIRMED;
+                    break;
+                case payment_types_1.PaymentStatus.REJECTED:
+                case payment_types_1.PaymentStatus.CANCELLED:
+                case payment_types_1.PaymentStatus.REFUNDED:
+                    newStatus = booking_types_1.BookingStatus.CANCELLED;
+                    break;
+                default:
+                    return;
+            }
+            if (newStatus !== booking.status) {
+                booking.status = newStatus;
+                await this.bookingRepository.save(booking);
+                // Notificar al usuario sobre el cambio de estado
+                await this.notifyUser(payment);
+            }
         }
         catch (error) {
-            console.error('❌ [WebhookService] Error confirmando reserva:', error);
-            // No re-lanzar el error para no fallar el webhook
+            logger_1.logger.error('Error actualizando estado de reserva:', error);
+            throw error;
         }
     }
-    /**
-     * Maneja pago fallido - libera reserva
-     */
-    async handlePaymentFailed(payment) {
+    async notifyUser(payment) {
         try {
-            console.log(`❌ [WebhookService] Pago fallido - liberando reserva: ${payment.bookingId}`);
-            // Aquí se integraría con el servicio de reservas
-            // await this.reservationService.releaseReservation(payment.bookingId);
-            payment.metadata = {
-                ...payment.metadata,
-                reservationReleased: true,
-                releasedAt: new Date(),
-            };
-            await this.paymentRepository.save(payment);
+            if (!payment.user)
+                return;
+            const message = this.getStatusMessage(payment);
+            await this.notificationService.sendNotification({
+                userId: payment.user.id,
+                title: 'Actualización de Pago',
+                message,
+                type: 'PAYMENT_UPDATE',
+                data: {
+                    paymentId: payment.id,
+                    status: payment.status,
+                },
+            });
         }
         catch (error) {
-            console.error('❌ [WebhookService] Error liberando reserva:', error);
+            logger_1.logger.error('Error notificando al usuario:', error);
+        }
+    }
+    getStatusMessage(payment) {
+        switch (payment.status) {
+            case payment_types_1.PaymentStatus.APPROVED:
+                return 'Tu pago ha sido aprobado. La reserva está confirmada.';
+            case payment_types_1.PaymentStatus.REJECTED:
+                return 'Tu pago ha sido rechazado. Por favor, intenta nuevamente.';
+            case payment_types_1.PaymentStatus.CANCELLED:
+                return 'Tu pago ha sido cancelado.';
+            case payment_types_1.PaymentStatus.REFUNDED:
+                return 'Tu pago ha sido reembolsado.';
+            default:
+                return 'El estado de tu pago ha sido actualizado.';
+        }
+    }
+    mapMercadoPagoStatus(status) {
+        switch (status) {
+            case 'approved':
+                return payment_types_1.PaymentStatus.APPROVED;
+            case 'rejected':
+                return payment_types_1.PaymentStatus.REJECTED;
+            case 'cancelled':
+                return payment_types_1.PaymentStatus.CANCELLED;
+            case 'refunded':
+                return payment_types_1.PaymentStatus.REFUNDED;
+            default:
+                return payment_types_1.PaymentStatus.PENDING;
         }
     }
 }

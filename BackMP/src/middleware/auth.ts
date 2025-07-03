@@ -15,7 +15,11 @@ declare global {
 }
 
 export const authenticate = (requiredRoles: string[] = []) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> => {
         try {
             console.log('🔐 [Auth] authenticate - Iniciando autenticación...');
             console.log('🔍 [Auth] Required roles:', requiredRoles);
@@ -32,20 +36,22 @@ export const authenticate = (requiredRoles: string[] = []) => {
                 console.log(
                     '❌ [Auth] No se proporcionó token de autenticación',
                 );
-                return res.status(401).json({
+                res.status(401).json({
                     status: 'error',
                     message: 'No se proporcionó token de autenticación',
                 });
+                return;
             }
 
             if (!authHeader.startsWith('Bearer ')) {
                 console.log(
                     '❌ [Auth] Formato de token inválido - no empieza con Bearer',
                 );
-                return res.status(401).json({
+                res.status(401).json({
                     status: 'error',
                     message: 'Formato de token inválido',
                 });
+                return;
             }
 
             const token = authHeader.split(' ')[1];
@@ -80,10 +86,11 @@ export const authenticate = (requiredRoles: string[] = []) => {
 
                 if (decoded.exp < currentTimestamp) {
                     console.log('❌ [Auth] Token expirado');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token expirado',
                     });
+                    return;
                 }
 
                 if (requiredRoles.length > 0) {
@@ -101,10 +108,11 @@ export const authenticate = (requiredRoles: string[] = []) => {
                         console.log(
                             '❌ [Auth] Usuario no tiene los roles necesarios',
                         );
-                        return res.status(403).json({
+                        res.status(403).json({
                             status: 'error',
                             message: 'No tienes los permisos necesarios',
                         });
+                        return;
                     }
 
                     console.log('✅ [Auth] Usuario tiene los roles necesarios');
@@ -125,38 +133,42 @@ export const authenticate = (requiredRoles: string[] = []) => {
 
                 if (error instanceof jwt.JsonWebTokenError) {
                     console.log('❌ [Auth] JsonWebTokenError - Token inválido');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token inválido',
                     });
+                    return;
                 }
 
                 if (error instanceof jwt.TokenExpiredError) {
                     console.log('❌ [Auth] TokenExpiredError - Token expirado');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token expirado',
                     });
+                    return;
                 }
 
                 console.error(
                     '❌ [Auth] Error desconocido en autenticación:',
                     error,
                 );
-                return res.status(500).json({
+                res.status(500).json({
                     status: 'error',
                     message: 'Error en la autenticación',
                 });
+                return;
             }
         } catch (error) {
             console.error(
                 '❌ [Auth] Error interno del servidor en autenticación:',
                 error,
             );
-            return res.status(500).json({
+            res.status(500).json({
                 status: 'error',
                 message: 'Error interno del servidor',
             });
+            return;
         }
     };
 };
@@ -167,7 +179,11 @@ export const requireRole = (role: string) => {
 };
 
 export const isOwner = (paramIdField: string = 'id') => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> => {
         try {
             console.log(
                 '👤 [Auth] isOwner - Verificando propiedad del recurso...',
@@ -180,10 +196,11 @@ export const isOwner = (paramIdField: string = 'id') => {
 
             if (req.user?.id !== resourceId) {
                 console.log('❌ [Auth] Usuario no es propietario del recurso');
-                return res.status(403).json({
+                res.status(403).json({
                     status: 'error',
                     message: 'No tienes permiso para acceder a este recurso',
                 });
+                return;
             }
 
             console.log('✅ [Auth] Usuario es propietario del recurso');
@@ -193,10 +210,11 @@ export const isOwner = (paramIdField: string = 'id') => {
                 '❌ [Auth] Error al verificar la propiedad del recurso:',
                 error,
             );
-            return res.status(500).json({
+            res.status(500).json({
                 status: 'error',
                 message: 'Error al verificar la propiedad del recurso',
             });
+            return;
         }
     };
 };

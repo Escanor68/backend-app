@@ -11,6 +11,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Payment = void 0;
 const typeorm_1 = require("typeorm");
+const user_model_1 = require("./user.model");
+const booking_model_1 = require("./booking.model");
+const payment_types_1 = require("../types/payment.types");
 let Payment = class Payment {
 };
 exports.Payment = Payment;
@@ -27,7 +30,11 @@ __decorate([
     __metadata("design:type", Number)
 ], Payment.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: payment_types_1.PaymentStatus,
+        default: payment_types_1.PaymentStatus.PENDING,
+    }),
     __metadata("design:type", String)
 ], Payment.prototype, "status", void 0);
 __decorate([
@@ -38,6 +45,11 @@ __decorate([
     (0, typeorm_1.Column)('json'),
     __metadata("design:type", Object)
 ], Payment.prototype, "field", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => booking_model_1.Booking),
+    (0, typeorm_1.JoinColumn)({ name: 'bookingId' }),
+    __metadata("design:type", booking_model_1.Booking)
+], Payment.prototype, "booking", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
@@ -51,14 +63,18 @@ __decorate([
     __metadata("design:type", String)
 ], Payment.prototype, "userId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)('User', { nullable: true }),
+    (0, typeorm_1.ManyToOne)(() => user_model_1.User, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'userId' }),
-    __metadata("design:type", Object)
+    __metadata("design:type", user_model_1.User)
 ], Payment.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.Column)('json', { nullable: true }),
     __metadata("design:type", Object)
 ], Payment.prototype, "metadata", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], Payment.prototype, "externalId", void 0);
 __decorate([
     (0, typeorm_1.Column)('json', { nullable: true }),
     __metadata("design:type", Object)

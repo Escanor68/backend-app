@@ -9,7 +9,8 @@ import {
 } from 'typeorm';
 import { User } from './user.model';
 import { Booking } from './booking.model';
-import { PaymentStatus, PaymentMetadata } from '../types/payment.types';
+import { PaymentStatus } from '../types/payment.types';
+import type { PaymentMetadata } from '../types/payment.types';
 
 @Entity('payments')
 export class Payment {

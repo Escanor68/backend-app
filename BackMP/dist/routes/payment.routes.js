@@ -11,7 +11,7 @@ console.log('🛣️ [PaymentRoutes] Configurando rutas de pagos...');
 console.log('📝 [PaymentRoutes] Registrando ruta pública: POST /webhook');
 router.post('/webhook', (req, res, next) => {
     console.log('🔗 [PaymentRoutes] Webhook recibido - POST /webhook');
-    paymentController.handleWebhook(req, res, next);
+    paymentController.handleWebhook(req, res);
 });
 // Rutas protegidas
 console.log('🔒 [PaymentRoutes] Aplicando middleware de autenticación a rutas protegidas');

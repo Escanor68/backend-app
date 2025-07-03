@@ -7,8 +7,8 @@ console.log('📦 [Database] Configurando conexión a base de datos...');
 // Crear la conexión a la base de datos
 export const AppDataSource = new DataSource({
     ...mysqlConfig,
-    entities: ['src/models/**/*.model.ts'],
-    migrations: ['src/migrations/*.ts'],
+    entities: ['dist/models/**/*.model.js'],
+    migrations: ['dist/migrations/*.js'],
     synchronize: config.nodeEnv !== 'production',
     logging: config.nodeEnv === 'development',
 });

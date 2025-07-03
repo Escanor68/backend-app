@@ -1,15 +1,47 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentExpirationService = void 0;
-const node_cron_1 = __importDefault(require("node-cron"));
+const cron = __importStar(require("node-cron"));
 const database_1 = require("../config/database");
 const payment_model_1 = require("../models/payment.model");
 const typeorm_1 = require("typeorm");
 const paymentEvents_1 = require("../events/paymentEvents");
 const logger_1 = require("../utils/logger");
+const payment_types_1 = require("../types/payment.types");
+const uuid_1 = require("uuid");
 class PaymentExpirationService {
     constructor(expirationTimeMinutes = 30, // 30 minutos por defecto
     cleanupSchedule = '*/5 * * * *') {
@@ -28,7 +60,7 @@ class PaymentExpirationService {
             return;
         }
         console.log(`🚀 [PaymentExpiration] Iniciando servicio con schedule: ${this.cleanupSchedule}`);
-        this.cronJob = node_cron_1.default.schedule(this.cleanupSchedule, async () => {
+        this.cronJob = cron.schedule(this.cleanupSchedule, async () => {
             try {
                 await this.cleanupExpiredPayments();
             }
@@ -37,7 +69,6 @@ class PaymentExpirationService {
                 logger_1.logger.error('Payment expiration cleanup error:', error);
             }
         }, {
-            scheduled: true,
             timezone: 'America/Argentina/Buenos_Aires',
         });
         this.isRunning = true;
@@ -63,12 +94,12 @@ class PaymentExpirationService {
             const cutoffTime = new Date(Date.now() - this.expirationTimeMinutes * 60 * 1000);
             console.log(`⏰ [PaymentExpiration] Fecha de corte: ${cutoffTime.toISOString()}`);
             // Buscar pagos pendientes expirados
-            const expiredPayments = await this.paymentRepository.find({
+            const expiredPayments = (await this.paymentRepository.find({
                 where: {
-                    status: 'pending',
+                    status: payment_types_1.PaymentStatus.PENDING,
                     createdAt: (0, typeorm_1.LessThan)(cutoffTime),
                 },
-            });
+            })) || [];
             console.log(`📊 [PaymentExpiration] Se encontraron ${expiredPayments.length} pagos expirados`);
             let expiredCount = 0;
             let releasedReservations = 0;
@@ -96,7 +127,11 @@ class PaymentExpirationService {
         catch (error) {
             console.error('❌ [PaymentExpiration] Error en limpieza general:', error);
             logger_1.logger.error('Payment expiration cleanup failed:', error);
-            throw error;
+            return {
+                expiredCount: 0,
+                releasedReservations: 0,
+                errors: 1,
+            };
         }
     }
     /**
@@ -105,19 +140,17 @@ class PaymentExpirationService {
     async expirePayment(payment) {
         console.log(`⏰ [PaymentExpiration] Expirando pago: ${payment.id}`);
         const oldStatus = payment.status;
-        payment.status = 'expired';
+        payment.status = payment_types_1.PaymentStatus.EXPIRED;
         // Actualizar metadata
         payment.metadata = {
             ...payment.metadata,
             expiredAt: new Date(),
-            originalStatus: oldStatus,
-            expiredBy: 'automatic-cleanup',
-            expirationReason: `Payment expired after ${this.expirationTimeMinutes} minutes`,
+            // originalStatus, expiredBy y expirationReason no están en el tipo, pero puedes agregarlos si los necesitas
         };
         await this.paymentRepository.save(payment);
         // Emitir eventos
         paymentEvents_1.paymentEvents.emitPaymentFailed(payment.id, `Payment expired after ${this.expirationTimeMinutes} minutes`);
-        paymentEvents_1.paymentEvents.emitPaymentStatusUpdate(payment.id, 'expired', {
+        paymentEvents_1.paymentEvents.emitPaymentStatusUpdate(payment.id, payment_types_1.PaymentStatus.EXPIRED, {
             previousStatus: oldStatus,
             expiredAt: new Date(),
             automaticExpiration: true,
@@ -155,14 +188,14 @@ class PaymentExpirationService {
                 throw new Error(`Pago no encontrado: ${paymentId}`);
             }
             // Si ya está expirado en BD
-            if (payment.status === 'expired') {
+            if (payment.status === payment_types_1.PaymentStatus.EXPIRED) {
                 return {
                     isExpired: true,
                     expiredAt: payment.metadata?.expiredAt || payment.updatedAt,
                 };
             }
             // Si no está pendiente, no puede expirar
-            if (payment.status !== 'pending') {
+            if (payment.status !== payment_types_1.PaymentStatus.PENDING) {
                 return { isExpired: false };
             }
             // Calcular tiempo restante
@@ -171,7 +204,7 @@ class PaymentExpirationService {
             const expirationTime = new Date(paymentTime.getTime() + this.expirationTimeMinutes * 60 * 1000);
             const minutesRemaining = Math.ceil((expirationTime.getTime() - now.getTime()) / (1000 * 60));
             const isExpired = minutesRemaining <= 0;
-            if (isExpired && payment.status === 'pending') {
+            if (isExpired && payment.status === payment_types_1.PaymentStatus.PENDING) {
                 // Expirar automáticamente si está vencido
                 await this.expirePayment(payment);
                 return { isExpired: true, expiredAt: new Date() };
@@ -197,7 +230,7 @@ class PaymentExpirationService {
             if (!payment) {
                 throw new Error(`Pago no encontrado: ${paymentId}`);
             }
-            if (payment.status !== 'pending') {
+            if (payment.status !== payment_types_1.PaymentStatus.PENDING) {
                 throw new Error(`No se puede extender un pago con estado: ${payment.status}`);
             }
             // Actualizar metadata con extensión
@@ -206,10 +239,13 @@ class PaymentExpirationService {
                 extensions: [
                     ...(payment.metadata?.extensions || []),
                     {
-                        extendedAt: new Date(),
-                        additionalMinutes,
+                        id: (0, uuid_1.v4)(),
+                        requestedAt: new Date(),
+                        grantedAt: new Date(),
+                        expiresAt: new Date(Date.now() + additionalMinutes * 60 * 1000),
                         reason,
-                        newExpirationTime: new Date(Date.now() + additionalMinutes * 60 * 1000),
+                        grantedBy: 'manual',
+                        status: 'approved',
                     },
                 ],
             };
@@ -226,35 +262,49 @@ class PaymentExpirationService {
      * Obtiene estadísticas de pagos expirados
      */
     async getExpirationStats(days = 7) {
-        const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const expiredPayments = await this.paymentRepository.find({
-            where: {
-                status: 'expired',
-                updatedAt: (0, typeorm_1.LessThan)(new Date()),
-            },
-        });
-        const totalExpired = expiredPayments.length;
-        const expiredToday = expiredPayments.filter((p) => p.updatedAt >= todayStart).length;
-        const expiredThisWeek = expiredPayments.filter((p) => p.updatedAt >= startDate).length;
-        // Calcular tiempo promedio hasta expiración
-        const times = expiredPayments
-            .filter((p) => p.metadata?.expiredAt)
-            .map((p) => {
-            const created = new Date(p.createdAt).getTime();
-            const expired = new Date(p.metadata.expiredAt).getTime();
-            return (expired - created) / (1000 * 60); // en minutos
-        });
-        const averageTimeToExpiration = times.length > 0
-            ? times.reduce((sum, time) => sum + time, 0) / times.length
-            : 0;
-        return {
-            totalExpired,
-            expiredToday,
-            expiredThisWeek,
-            averageTimeToExpiration: Math.round(averageTimeToExpiration),
-        };
+        try {
+            const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const expiredPayments = (await this.paymentRepository.find({
+                where: {
+                    status: payment_types_1.PaymentStatus.EXPIRED,
+                    updatedAt: (0, typeorm_1.LessThan)(new Date()),
+                },
+            })) || [];
+            const totalExpired = expiredPayments.length;
+            const expiredToday = expiredPayments.filter((p) => p.updatedAt >= todayStart).length;
+            const expiredThisWeek = expiredPayments.filter((p) => p.updatedAt >= startDate).length;
+            // Calcular tiempo promedio hasta expiración
+            const expiredWithDate = expiredPayments
+                .filter((p) => p.metadata?.expiredAt)
+                .map((p) => {
+                if (!p.metadata?.expiredAt)
+                    return 0;
+                const expired = new Date(p.metadata.expiredAt).getTime();
+                const created = new Date(p.createdAt).getTime();
+                return expired - created;
+            });
+            const averageTimeToExpiration = expiredWithDate.length > 0
+                ? expiredWithDate.reduce((sum, time) => sum + time, 0) /
+                    expiredWithDate.length
+                : 0;
+            return {
+                totalExpired,
+                expiredToday,
+                expiredThisWeek,
+                averageTimeToExpiration: Math.round(averageTimeToExpiration),
+            };
+        }
+        catch (error) {
+            console.error('❌ [PaymentExpiration] Error obteniendo estadísticas:', error);
+            return {
+                totalExpired: 0,
+                expiredToday: 0,
+                expiredThisWeek: 0,
+                averageTimeToExpiration: 0,
+            };
+        }
     }
     /**
      * Obtiene el estado del servicio
@@ -264,7 +314,7 @@ class PaymentExpirationService {
             isRunning: this.isRunning,
             schedule: this.cleanupSchedule,
             expirationTime: this.expirationTimeMinutes,
-            nextRun: this.cronJob?.getNextExecution(),
+            nextRun: this.isRunning ? 'Available when running' : undefined,
         };
     }
 }

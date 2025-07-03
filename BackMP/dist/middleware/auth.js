@@ -17,17 +17,19 @@ const authenticate = (requiredRoles = []) => {
             console.log('🎫 [Auth] Authorization header presente:', !!authHeader);
             if (!authHeader) {
                 console.log('❌ [Auth] No se proporcionó token de autenticación');
-                return res.status(401).json({
+                res.status(401).json({
                     status: 'error',
                     message: 'No se proporcionó token de autenticación',
                 });
+                return;
             }
             if (!authHeader.startsWith('Bearer ')) {
                 console.log('❌ [Auth] Formato de token inválido - no empieza con Bearer');
-                return res.status(401).json({
+                res.status(401).json({
                     status: 'error',
                     message: 'Formato de token inválido',
                 });
+                return;
             }
             const token = authHeader.split(' ')[1];
             console.log('🎫 [Auth] Token extraído (primeros 20 caracteres):', token.substring(0, 20) + '...');
@@ -44,10 +46,11 @@ const authenticate = (requiredRoles = []) => {
                 console.log('⏰ [Auth] Verificando expiración - Current:', currentTimestamp, 'Token exp:', decoded.exp);
                 if (decoded.exp < currentTimestamp) {
                     console.log('❌ [Auth] Token expirado');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token expirado',
                     });
+                    return;
                 }
                 if (requiredRoles.length > 0) {
                     console.log('🔒 [Auth] Verificando roles requeridos:', requiredRoles);
@@ -55,10 +58,11 @@ const authenticate = (requiredRoles = []) => {
                     const hasRequiredRole = requiredRoles.some((role) => decoded.roles.includes(role));
                     if (!hasRequiredRole) {
                         console.log('❌ [Auth] Usuario no tiene los roles necesarios');
-                        return res.status(403).json({
+                        res.status(403).json({
                             status: 'error',
                             message: 'No tienes los permisos necesarios',
                         });
+                        return;
                     }
                     console.log('✅ [Auth] Usuario tiene los roles necesarios');
                 }
@@ -74,31 +78,35 @@ const authenticate = (requiredRoles = []) => {
                 console.error('❌ [Auth] Error al verificar token:', error);
                 if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
                     console.log('❌ [Auth] JsonWebTokenError - Token inválido');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token inválido',
                     });
+                    return;
                 }
                 if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
                     console.log('❌ [Auth] TokenExpiredError - Token expirado');
-                    return res.status(401).json({
+                    res.status(401).json({
                         status: 'error',
                         message: 'Token expirado',
                     });
+                    return;
                 }
                 console.error('❌ [Auth] Error desconocido en autenticación:', error);
-                return res.status(500).json({
+                res.status(500).json({
                     status: 'error',
                     message: 'Error en la autenticación',
                 });
+                return;
             }
         }
         catch (error) {
             console.error('❌ [Auth] Error interno del servidor en autenticación:', error);
-            return res.status(500).json({
+            res.status(500).json({
                 status: 'error',
                 message: 'Error interno del servidor',
             });
+            return;
         }
     };
 };
@@ -118,20 +126,22 @@ const isOwner = (paramIdField = 'id') => {
             console.log('👤 [Auth] User ID:', req.user?.id);
             if (req.user?.id !== resourceId) {
                 console.log('❌ [Auth] Usuario no es propietario del recurso');
-                return res.status(403).json({
+                res.status(403).json({
                     status: 'error',
                     message: 'No tienes permiso para acceder a este recurso',
                 });
+                return;
             }
             console.log('✅ [Auth] Usuario es propietario del recurso');
             next();
         }
         catch (error) {
             console.error('❌ [Auth] Error al verificar la propiedad del recurso:', error);
-            return res.status(500).json({
+            res.status(500).json({
                 status: 'error',
                 message: 'Error al verificar la propiedad del recurso',
             });
+            return;
         }
     };
 };

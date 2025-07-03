@@ -1,19 +1,17 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.config = void 0;
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+const dotenv_1 = require("dotenv");
+(0, dotenv_1.config)();
 exports.config = {
-    port: process.env.PORT || 3003,
+    port: process.env.PORT || 3000,
+    nodeEnv: process.env.NODE_ENV || 'development',
     // Configuración de JWT
     jwt: {
         secret: process.env.JWT_SECRET || 'your-secret-key',
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-        refreshSecret: process.env.JWT_REFRESH_SECRET || 'tu-refresh-secreto-temporal',
-        refreshExpiresIn: '7d',
+        expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+        refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
+        refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     },
     // Configuración de MercadoPago
     mercadoPago: {
@@ -27,22 +25,26 @@ exports.config = {
         port: parseInt(process.env.DB_PORT || '5432'),
         username: process.env.DB_USERNAME || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres',
-        database: process.env.DB_NAME || 'backmp',
+        database: process.env.DB_NAME || 'app_futbol',
+        entities: ['src/models/**/*.ts'],
         synchronize: process.env.NODE_ENV !== 'production',
-        logging: process.env.NODE_ENV === 'development',
-        entities: ['src/models/**/*.model.ts'],
+        logging: process.env.NODE_ENV !== 'production',
     },
     // Configuración de CORS
     cors: {
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-        credentials: true,
+        origin: process.env.CORS_ORIGIN || '*',
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
     },
     // Configuración de Socket.IO
     socket: {
         cors: {
-            origin: process.env.SOCKET_CORS_ORIGIN || 'http://localhost:3000',
-            credentials: true,
+            origin: process.env.CORS_ORIGIN || '*',
+            methods: ['GET', 'POST'],
         },
+    },
+    app: {
+        url: process.env.APP_URL || 'http://localhost:3000',
     },
 };
 //# sourceMappingURL=index.js.map

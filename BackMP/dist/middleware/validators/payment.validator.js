@@ -45,7 +45,7 @@ const validatePaymentRequest = async (req, res, next) => {
     }
     catch (error) {
         if (error instanceof zod_1.z.ZodError) {
-            return res.status(400).json({
+            res.status(400).json({
                 status: 'error',
                 message: 'Datos de pago inválidos',
                 errors: error.errors.map((err) => ({
@@ -53,11 +53,13 @@ const validatePaymentRequest = async (req, res, next) => {
                     message: err.message,
                 })),
             });
+            return;
         }
-        return res.status(500).json({
+        res.status(500).json({
             status: 'error',
             message: 'Error al validar los datos del pago',
         });
+        return;
     }
 };
 exports.validatePaymentRequest = validatePaymentRequest;
