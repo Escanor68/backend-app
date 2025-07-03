@@ -5,13 +5,15 @@ import { User } from '../models/user.model';
 import { PasswordResetToken } from '../models/password-reset-token.model';
 import { AuditLog } from '../models/audit-log.model';
 import { BlacklistedToken } from '../models/blacklisted-token.model';
+import { FavoriteField } from '../models/favorite-field.model';
+import { Notification } from '../models/notification.model';
 
 console.log('📦 [Database] Configurando conexión a base de datos...');
 
 // Crear la conexión a la base de datos
 export const AppDataSource = new DataSource({
     ...mysqlConfig,
-    entities: [User, PasswordResetToken, AuditLog, BlacklistedToken],
+    entities: [User, PasswordResetToken, AuditLog, BlacklistedToken, FavoriteField, Notification],
     migrations: ['src/migrations/*.ts'],
     synchronize: false, // Deshabilitado para evitar conflictos con columnas existentes
     logging: config.server.nodeEnv === 'development',

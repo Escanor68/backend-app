@@ -32,39 +32,6 @@ export class NotificationPreferencesDto {
     sms!: boolean;
 }
 
-export class CreateUserDto {
-    @IsString()
-    name!: string;
-
-    @IsEmail()
-    email!: string;
-
-    @IsString()
-    @MinLength(6)
-    password!: string;
-
-    @IsString()
-    @IsOptional()
-    phone?: string;
-
-    @IsOptional()
-    @IsArray()
-    @IsEnum(UserRole, { each: true })
-    roles?: UserRole[];
-
-    @IsOptional()
-    @IsObject()
-    @ValidateNested()
-    @Type(() => LocationDto)
-    preferredLocation?: LocationDto;
-
-    @IsOptional()
-    @IsObject()
-    @ValidateNested()
-    @Type(() => NotificationPreferencesDto)
-    notificationPreferences?: NotificationPreferencesDto;
-}
-
 export class UpdateUserDto {
     @IsString()
     @IsOptional()

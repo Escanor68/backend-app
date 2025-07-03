@@ -2,8 +2,7 @@ import { AppDataSource } from '../config/database';
 import { User } from '../models/user.model';
 import { ApiError } from '../utils/api-error';
 import { HttpStatus } from '../utils/http-status';
-import { LoginDto } from '../dto/auth.dto';
-import { CreateUserDto } from '../dto/user.dto';
+import { LoginDto, RegisterDto } from '../dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { UserRole, UserData, LoginResult } from '../types/user.types';
@@ -60,7 +59,7 @@ export class AuthService {
         };
     }
 
-    async register(userData: CreateUserDto): Promise<User> {
+    async register(userData: RegisterDto): Promise<User> {
         const existingUser = await this.userRepository.findOne({
             where: { email: userData.email },
         });
@@ -69,10 +68,8 @@ export class AuthService {
             throw new ApiError(HttpStatus.CONFLICT, 'El email ya está registrado');
         }
 
-        const hashedPassword = await bcrypt.hash(userData.password, 10);
         const user = this.userRepository.create({
             ...userData,
-            password: hashedPassword,
             roles: userData.roles ? userData.roles.map(r => r as UserRole) : [UserRole.USER],
         });
 

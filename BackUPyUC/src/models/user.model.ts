@@ -32,10 +32,13 @@ export class User {
     phone?: string;
 
     @Column({
-        type: 'enum',
-        enum: UserRole,
-        array: true,
-        default: [UserRole.USER],
+        type: 'json',
+        nullable: false,
+        transformer: {
+            to: (value: any) => (Array.isArray(value) ? value : [value]),
+            from: (value: any) => (Array.isArray(value) ? value : [value]),
+        },
+        default: '["user"]',
     })
     roles!: UserRole[];
 
@@ -82,7 +85,7 @@ export class User {
     @BeforeInsert()
     @BeforeUpdate()
     async hashPassword() {
-        if (this.password) {
+        if (this.password && !this.password.startsWith('$2b$')) {
             const salt = await bcrypt.genSalt(10);
             this.password = await bcrypt.hash(this.password, salt);
         }

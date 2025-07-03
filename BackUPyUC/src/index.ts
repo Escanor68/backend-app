@@ -18,6 +18,7 @@ import winston from 'winston';
 import { startServer } from './server';
 import cookieParser from 'cookie-parser';
 import { TokenCleanupService } from './services/token-cleanup.service';
+import { initializeDatabase } from './config/database';
 
 dotenv.config();
 console.log('🚀 [BackUPyUC] Iniciando aplicación de usuarios...');
@@ -25,7 +26,6 @@ console.log('🚀 [BackUPyUC] Iniciando aplicación de usuarios...');
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { notFoundHandler } from './middleware/notFoundHandler';
-import { setupDatabase } from './config/database';
 import userRoutes from './routes/user.routes';
 import authRoutes from './routes/auth.routes';
 
@@ -61,7 +61,7 @@ console.log('🚦 [BackUPyUC] Rate limiting configurado');
 app.use(limiter);
 app.use(
     cors({
-        origin: ['http://localhost:3001', 'http://localhost:4000'],
+        origin: ['http://localhost:3001'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
@@ -189,20 +189,35 @@ process.on('SIGINT', () => {
     });
 });
 
-// Iniciar servidor
+// Inicializar base de datos y servidor
 const PORT = process.env.PORT || 3001;
 
-// Inicializar servicio de limpieza de tokens
-const tokenCleanupService = new TokenCleanupService();
-tokenCleanupService.startCleanup(60); // Limpiar cada hora
+async function startApplication() {
+    try {
+        // Inicializar base de datos
+        console.log('🔄 [BackUPyUC] Inicializando base de datos...');
+        await initializeDatabase();
+        console.log('✅ [BackUPyUC] Base de datos inicializada correctamente');
 
-server.listen(PORT, () => {
-    console.log(`🚀 [BackUPyUC] Servidor iniciado en puerto ${PORT}`);
-    console.log(`🌐 [BackUPyUC] URL: http://localhost:${PORT}`);
-    console.log(`📚 [BackUPyUC] API Docs: http://localhost:${PORT}/api-docs`);
-    console.log(`❤️ [BackUPyUC] Health Check: http://localhost:${PORT}/health`);
-    console.log(`🧹 [BackUPyUC] Token cleanup service iniciado`);
-});
+        // Inicializar servicio de limpieza de tokens
+        const tokenCleanupService = new TokenCleanupService();
+        tokenCleanupService.startCleanup(60); // Limpiar cada hora
+
+        // Iniciar servidor
+        server.listen(PORT, () => {
+            console.log(`🚀 [BackUPyUC] Servidor iniciado en puerto ${PORT}`);
+            console.log(`🌐 [BackUPyUC] URL: http://localhost:${PORT}`);
+            console.log(`📚 [BackUPyUC] API Docs: http://localhost:${PORT}/api-docs`);
+            console.log(`❤️ [BackUPyUC] Health Check: http://localhost:${PORT}/health`);
+            console.log(`🧹 [BackUPyUC] Token cleanup service iniciado`);
+        });
+    } catch (error) {
+        console.error('❌ [BackUPyUC] Error al inicializar la aplicación:', error);
+        process.exit(1);
+    }
+}
+
+startApplication();
 
 export default app;
 export { io };

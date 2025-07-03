@@ -3,7 +3,7 @@ import { User } from '../models/user.model';
 import { FavoriteField } from '../models/favorite-field.model';
 import { Notification } from '../models/notification.model';
 import { PasswordResetToken } from '../models/password-reset-token.model';
-import { CreateUserDto, ChangePasswordDto } from '../dto/user.dto';
+import { ChangePasswordDto } from '../dto/user.dto';
 import { ApiError } from '../utils/api-error';
 import { HttpStatus } from '../utils/http-status';
 import * as bcrypt from 'bcrypt';
@@ -17,7 +17,7 @@ export class UserService {
     private notificationRepository = AppDataSource.getRepository(Notification);
     private passwordResetTokenRepository = AppDataSource.getRepository(PasswordResetToken);
 
-    async createUser(userData: CreateUserDto): Promise<User> {
+    async createUser(userData: any): Promise<User> {
         const existingUser = await this.userRepository.findOne({
             where: { email: userData.email },
         });
@@ -26,15 +26,13 @@ export class UserService {
             throw new ApiError(HttpStatus.CONFLICT, 'El email ya está registrado');
         }
 
-        const hashedPassword = await bcrypt.hash(userData.password, 10);
-
         const user = this.userRepository.create({
             ...userData,
-            password: hashedPassword,
-            roles: [UserRole.USER],
+            roles: userData.roles ? userData.roles : [UserRole.USER],
         });
 
-        return this.userRepository.save(user);
+        const saved = await this.userRepository.save(user);
+        return Array.isArray(saved) ? saved[0] : saved;
     }
 
     async getUserById(id: string): Promise<User> {

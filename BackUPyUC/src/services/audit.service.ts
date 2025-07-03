@@ -19,7 +19,7 @@ export class AuditService {
                 userId,
                 action,
                 resource,
-                resourceId,
+                resourceId: resourceId || undefined,
                 ipAddress: req.ip,
                 userAgent: req.get('User-Agent') || '',
                 success,

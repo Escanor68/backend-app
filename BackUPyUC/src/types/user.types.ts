@@ -1,7 +1,14 @@
 export enum UserRole {
-    USER = 'user',
-    ADMIN = 'admin',
-    MODERATOR = 'moderator',
+    USER = 'user', // Usuario básico que puede reservar canchas
+    PLAYER = 'player', // Jugador registrado
+    TEAM_CAPTAIN = 'team_captain', // Capitán de equipo
+    COACH = 'coach', // Entrenador
+    REFEREE = 'referee', // Árbitro
+    FIELD_OWNER = 'field_owner', // Dueño de cancha
+    FIELD_MANAGER = 'field_manager', // Gerente de cancha
+    MODERATOR = 'moderator', // Moderador del sistema
+    ADMIN = 'admin', // Administrador del sistema
+    SUPER_ADMIN = 'super_admin', // Super administrador
 }
 
 export interface UserData {

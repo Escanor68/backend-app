@@ -1,13 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { PasswordResetService } from '../services/password-reset.service';
-import { LoginDto } from '../dto/auth.dto';
-import {
-    CreateUserDto,
-    ForgotPasswordDto,
-    ResetPasswordDto,
-    ChangePasswordDto,
-} from '../dto/user.dto';
+import { LoginDto, RegisterDto } from '../dto/auth.dto';
+import { ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from '../dto/user.dto';
 import { plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
 
@@ -53,7 +48,7 @@ export class AuthController {
         try {
             console.log('📝 [AuthController] register - Iniciando...');
 
-            const dto = plainToClass(CreateUserDto, req.body);
+            const dto = plainToClass(RegisterDto, req.body);
             const errors = await validate(dto);
 
             if (errors.length > 0) {
@@ -278,3 +273,4 @@ export class AuthController {
         }
     }
 }
+ 

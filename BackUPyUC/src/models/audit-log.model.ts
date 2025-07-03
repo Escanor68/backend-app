@@ -14,8 +14,8 @@ export class AuditLog {
     @Column()
     resource!: string;
 
-    @Column({ nullable: true })
-    resourceId!: string | null;
+    @Column({ nullable: true, type: 'varchar' })
+    resourceId!: string;
 
     @Column()
     ipAddress!: string;
