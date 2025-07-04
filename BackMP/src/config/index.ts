@@ -37,7 +37,7 @@ export const config = {
 
     // Configuración de CORS
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization'],
     },
@@ -45,12 +45,19 @@ export const config = {
     // Configuración de Socket.IO
     socket: {
         cors: {
-            origin: process.env.CORS_ORIGIN || '*',
+            origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
             methods: ['GET', 'POST'],
         },
     },
 
     app: {
         url: process.env.APP_URL || 'http://localhost:3000',
+    },
+
+    // Configuración de comunicación con BackFutbol
+    backFutbol: {
+        baseUrl: process.env.BACKFUTBOL_BASE_URL || 'http://localhost:3001',
+        secret: process.env.BACKFUTBOL_SECRET || '',
+        timeout: parseInt(process.env.BACKFUTBOL_TIMEOUT || '10000'),
     },
 };

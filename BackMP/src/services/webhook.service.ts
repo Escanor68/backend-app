@@ -12,6 +12,7 @@ import { PaymentStatus } from '../types/payment.types';
 import { BookingStatus } from '../types/booking.types';
 import { NotificationService } from './notification.service';
 import { MercadoPagoService } from './mercado-pago.service';
+import { BackFutbolCommunicationService } from './backfutbol-communication.service';
 import { PaymentMetadata } from '../types/payment.types';
 
 export interface WebhookEvent {
@@ -34,11 +35,14 @@ export class WebhookService {
     private userRepository = AppDataSource.getRepository(User);
     private notificationService: NotificationService;
     private mercadoPagoService: MercadoPagoService;
+    private backFutbolCommunicationService: BackFutbolCommunicationService;
     private mercadoPagoSecret: string;
 
     constructor() {
         this.notificationService = new NotificationService();
         this.mercadoPagoService = new MercadoPagoService();
+        this.backFutbolCommunicationService =
+            new BackFutbolCommunicationService();
         this.mercadoPagoSecret = process.env.MP_WEBHOOK_SECRET || '';
         if (!this.mercadoPagoSecret) {
             console.warn(
@@ -155,9 +159,8 @@ export class WebhookService {
                 return;
             }
 
-            const paymentInfo = await this.mercadoPagoService.getPayment(
-                paymentId,
-            );
+            const paymentInfo =
+                await this.mercadoPagoService.getPayment(paymentId);
             const newStatus = this.mapMercadoPagoStatus(paymentInfo.status);
 
             if (newStatus !== payment.status) {
@@ -272,6 +275,45 @@ export class WebhookService {
             if (newStatus !== booking.status) {
                 booking.status = newStatus;
                 await this.bookingRepository.save(booking);
+
+                // Si el pago fue aprobado, notificar al backend de NestJS
+                if (payment.status === PaymentStatus.APPROVED) {
+                    try {
+                        logger.info(
+                            '🚀 [WebhookService] Pago aprobado, notificando a BackFutbol para generar reserva',
+                        );
+                        await this.backFutbolCommunicationService.notifySuccessfulPayment(
+                            payment,
+                        );
+                    } catch (error) {
+                        logger.error(
+                            '❌ [WebhookService] Error notificando a BackFutbol:',
+                            error,
+                        );
+                        // No lanzamos el error para no afectar el flujo principal
+                    }
+                }
+
+                // Si el pago fue cancelado o reembolsado, notificar que la cancha está disponible
+                if (
+                    payment.status === PaymentStatus.CANCELLED ||
+                    payment.status === PaymentStatus.REFUNDED
+                ) {
+                    try {
+                        logger.info(
+                            '🔄 [WebhookService] Pago cancelado/reembolsado, notificando que cancha está disponible',
+                        );
+                        await this.backFutbolCommunicationService.notifyFieldAvailable(
+                            payment,
+                        );
+                    } catch (error) {
+                        logger.error(
+                            '❌ [WebhookService] Error notificando cancha disponible:',
+                            error,
+                        );
+                        // No lanzamos el error para no afectar el flujo principal
+                    }
+                }
 
                 // Notificar al usuario sobre el cambio de estado
                 await this.notifyUser(payment);

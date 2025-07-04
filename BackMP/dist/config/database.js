@@ -11,7 +11,7 @@ exports.AppDataSource = new typeorm_1.DataSource({
     ...mysql_config_1.mysqlConfig,
     entities: ['dist/models/**/*.model.js'],
     migrations: ['dist/migrations/*.js'],
-    synchronize: index_1.config.nodeEnv !== 'production',
+    synchronize: false, // Desactivar sincronización automática para evitar conflictos
     logging: index_1.config.nodeEnv === 'development',
 });
 // Inicializar la conexión

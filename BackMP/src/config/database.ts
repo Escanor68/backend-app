@@ -9,7 +9,7 @@ export const AppDataSource = new DataSource({
     ...mysqlConfig,
     entities: ['dist/models/**/*.model.js'],
     migrations: ['dist/migrations/*.js'],
-    synchronize: config.nodeEnv !== 'production',
+    synchronize: false, // Desactivar sincronización automática para evitar conflictos
     logging: config.nodeEnv === 'development',
 });
 

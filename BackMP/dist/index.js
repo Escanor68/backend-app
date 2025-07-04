@@ -15,6 +15,7 @@ const paymentEvents_1 = require("./events/paymentEvents");
 Object.defineProperty(exports, "paymentEvents", { enumerable: true, get: function () { return paymentEvents_1.paymentEvents; } });
 const payment_expiration_service_1 = require("./services/payment-expiration.service");
 const audit_service_1 = require("./services/audit.service");
+const backfutbol_communication_service_1 = require("./services/backfutbol-communication.service");
 const security_utils_1 = require("./utils/security.utils");
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 console.log('🚀 [BackMP] Iniciando aplicación de pagos...');
@@ -32,6 +33,7 @@ exports.auditService = auditService;
 const paymentExpirationService = new payment_expiration_service_1.PaymentExpirationService(parseInt(process.env.PAYMENT_EXPIRATION_MINUTES || '30'), // 30 minutos por defecto
 process.env.CLEANUP_SCHEDULE || '*/5 * * * *');
 exports.paymentExpirationService = paymentExpirationService;
+const backFutbolCommunicationService = new backfutbol_communication_service_1.BackFutbolCommunicationService();
 console.log('🛡️ [BackMP] Servicios de seguridad inicializados');
 // Configurar middleware de seguridad PCI DSS
 app.use((0, express_rate_limit_1.default)({
@@ -123,6 +125,31 @@ app.get('/metrics', async (req, res) => {
     catch (error) {
         console.error('❌ [BackMP] Error obteniendo métricas:', error);
         res.status(500).json({ error: 'Error obteniendo métricas' });
+    }
+});
+// Endpoint para verificar conectividad con BackFutbol
+app.get('/backfutbol/health', async (req, res) => {
+    try {
+        console.log('🔍 [BackMP] Verificando conectividad con BackFutbol...');
+        const isConnected = await backFutbolCommunicationService.checkConnectivity();
+        const healthStatus = {
+            status: isConnected ? 'OK' : 'ERROR',
+            timestamp: new Date().toISOString(),
+            backFutbol: {
+                connected: isConnected,
+                baseUrl: config_1.config.backFutbol.baseUrl,
+                timeout: config_1.config.backFutbol.timeout,
+            },
+        };
+        res.json(healthStatus);
+    }
+    catch (error) {
+        console.error('❌ [BackMP] Error verificando conectividad con BackFutbol:', error);
+        res.status(500).json({
+            status: 'ERROR',
+            error: 'Error verificando conectividad con BackFutbol',
+            timestamp: new Date().toISOString(),
+        });
     }
 });
 // Socket.IO events con auditoría

@@ -8,6 +8,7 @@ import paymentRoutes from './routes/payment.routes';
 import { paymentEvents } from './events/paymentEvents';
 import { PaymentExpirationService } from './services/payment-expiration.service';
 import { AuditService } from './services/audit.service';
+import { BackFutbolCommunicationService } from './services/backfutbol-communication.service';
 import { maskSensitiveData, extractRequestInfo } from './utils/security.utils';
 import rateLimit from 'express-rate-limit';
 
@@ -29,6 +30,7 @@ const paymentExpirationService = new PaymentExpirationService(
     parseInt(process.env.PAYMENT_EXPIRATION_MINUTES || '30'), // 30 minutos por defecto
     process.env.CLEANUP_SCHEDULE || '*/5 * * * *', // Cada 5 minutos
 );
+const backFutbolCommunicationService = new BackFutbolCommunicationService();
 
 console.log('🛡️ [BackMP] Servicios de seguridad inicializados');
 
@@ -144,6 +146,35 @@ app.get('/metrics', async (req, res) => {
     } catch (error) {
         console.error('❌ [BackMP] Error obteniendo métricas:', error);
         res.status(500).json({ error: 'Error obteniendo métricas' });
+    }
+});
+
+// Endpoint para verificar conectividad con BackFutbol
+app.get('/backfutbol/health', async (req, res) => {
+    try {
+        console.log('🔍 [BackMP] Verificando conectividad con BackFutbol...');
+        const isConnected =
+            await backFutbolCommunicationService.checkConnectivity();
+        const healthStatus = {
+            status: isConnected ? 'OK' : 'ERROR',
+            timestamp: new Date().toISOString(),
+            backFutbol: {
+                connected: isConnected,
+                baseUrl: config.backFutbol.baseUrl,
+                timeout: config.backFutbol.timeout,
+            },
+        };
+        res.json(healthStatus);
+    } catch (error) {
+        console.error(
+            '❌ [BackMP] Error verificando conectividad con BackFutbol:',
+            error,
+        );
+        res.status(500).json({
+            status: 'ERROR',
+            error: 'Error verificando conectividad con BackFutbol',
+            timestamp: new Date().toISOString(),
+        });
     }
 });
 
